@@ -117,11 +117,12 @@ export async function getMapPinsInBounds(
     vertical?: string
     category?: string
     business_type?: string
+    primary_gbp_category?: string   // L4
   },
   limit = 500
 ) {
   // Use !inner join when classification filters active so PostgREST filters work on joined table
-  const hasClsFilter = !!(filters?.vertical || filters?.category || filters?.business_type)
+  const hasClsFilter = !!(filters?.vertical || filters?.category || filters?.business_type || filters?.primary_gbp_category)
   const clsJoin = hasClsFilter ? 'business_classifications!inner' : 'business_classifications'
 
   let query = supabase
@@ -138,7 +139,7 @@ export async function getMapPinsInBounds(
       review_status,
       website,
       classification:${clsJoin}(
-        vertical, category, business_type, gbp_confidence
+        vertical, category, business_type, gbp_confidence, primary_gbp_category
       )
     `)
     .not('lat', 'is', null)
@@ -154,9 +155,10 @@ export async function getMapPinsInBounds(
   if (filters?.state_abbr)    query = query.eq('state_abbr', filters.state_abbr)
 
   // Classification filters applied on the joined table
-  if (filters?.vertical)       query = query.eq('business_classifications.vertical', filters.vertical)
-  if (filters?.category)       query = query.eq('business_classifications.category', filters.category)
-  if (filters?.business_type)  query = query.eq('business_classifications.business_type', filters.business_type)
+  if (filters?.vertical)              query = query.eq('business_classifications.vertical', filters.vertical)
+  if (filters?.category)              query = query.eq('business_classifications.category', filters.category)
+  if (filters?.business_type)         query = query.eq('business_classifications.business_type', filters.business_type)
+  if (filters?.primary_gbp_category)  query = query.eq('business_classifications.primary_gbp_category', filters.primary_gbp_category)
 
   const { data, error } = await query
   if (error) throw error

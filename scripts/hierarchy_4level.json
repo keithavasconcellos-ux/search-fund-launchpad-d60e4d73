@@ -1,0 +1,666 @@
+{
+  "Business Services": {
+    "Consumer Services": {
+      "Auto repair & maintenance": {
+        "primary": "Auto repair shop",
+        "secondary": [
+          "Auto body shop",
+          "Car repair and maintenance",
+          "Auto tune up service",
+          "Brake shop",
+          "Tire shop"
+        ]
+      },
+      "Funeral & cemetery services": {
+        "primary": "Funeral home",
+        "secondary": [
+          "Cemetery",
+          "Cremation service",
+          "Casket service",
+          "Mortuary",
+          "Memorial park"
+        ]
+      },
+      "Moving & junk removal": {
+        "primary": "Moving company",
+        "secondary": [
+          "Junk removal service",
+          "Dumpster rental service",
+          "Hauling service",
+          "Self-storage facility"
+        ]
+      },
+      "Pet boarding & grooming": {
+        "primary": "Pet grooming service",
+        "secondary": [
+          "Dog day care center",
+          "Pet boarding service",
+          "Dog trainer",
+          "Animal shelter",
+          "Kennel"
+        ]
+      },
+      "Residential services franchises": {
+        "primary": "Contractor",
+        "secondary": [
+          "Handyman",
+          "Home improvement store",
+          "House cleaning service",
+          "Lawn care service"
+        ]
+      },
+      "Veterinary clinics": {
+        "primary": "Veterinarian",
+        "secondary": [
+          "Animal hospital",
+          "Veterinary pharmacy",
+          "Pet boarding service",
+          "Emergency veterinarian service"
+        ]
+      }
+    },
+    "Education & Training": {
+      "Corporate training providers": {
+        "primary": "Corporate entertainment service",
+        "secondary": [
+          "Training center",
+          "Business management consultant",
+          "Educational consultant",
+          "Computer training school"
+        ]
+      },
+      "Early childhood education (daycare)": {
+        "primary": "Day care center",
+        "secondary": [
+          "Preschool",
+          "Childminder",
+          "Child care agency",
+          "Part time daycare",
+          "Children's club"
+        ]
+      },
+      "Test prep & tutoring centers": {
+        "primary": "Tutoring service",
+        "secondary": [
+          "Cramming school",
+          "Education center",
+          "Coaching center",
+          "After school program"
+        ]
+      },
+      "Vocational / trade schools": {
+        "primary": "Vocational school",
+        "secondary": [
+          "Technical school",
+          "Trade school",
+          "Apprenticeship center",
+          "Adult education school"
+        ]
+      }
+    },
+    "Facility & Specialty Services": {
+      "Commercial cleaning & janitorial": {
+        "primary": "Commercial cleaning service",
+        "secondary": [
+          "Cleaners",
+          "Cleaning products supplier",
+          "House cleaning service",
+          "Janitorial service"
+        ]
+      },
+      "Electrical contractors": {
+        "primary": "Electrician",
+        "secondary": [
+          "Electrical installation service",
+          "Generator installation service",
+          "Solar energy company",
+          "Lighting contractor"
+        ]
+      },
+      "Fire & safety inspection": {
+        "primary": "Fire protection service",
+        "secondary": [
+          "Fire department",
+          "Safety equipment supplier",
+          "Building inspector",
+          "Emergency training"
+        ]
+      },
+      "HVAC maintenance & service": {
+        "primary": "HVAC contractor",
+        "secondary": [
+          "Air conditioning repair service",
+          "Air conditioning contractor",
+          "Furnace repair service",
+          "Heating contractor",
+          "Air duct cleaning service"
+        ]
+      },
+      "Landscaping & grounds maintenance": {
+        "primary": "Landscaping service",
+        "secondary": [
+          "Lawn care service",
+          "Gardener",
+          "Tree service",
+          "Garden service",
+          "Arborist and tree surgeon"
+        ]
+      },
+      "Painting & surface contractors": {
+        "primary": "Painter",
+        "secondary": [
+          "House painter",
+          "Commercial painter",
+          "Drywall contractor",
+          "Pressure washing service"
+        ]
+      },
+      "Pest control": {
+        "primary": "Pest control service",
+        "secondary": [
+          "Exterminator",
+          "Termite inspection service",
+          "Bird control service",
+          "Animal control service"
+        ]
+      },
+      "Plumbing & drain services": {
+        "primary": "Plumber",
+        "secondary": [
+          "Drainage service",
+          "Septic system service",
+          "Water treatment service",
+          "Pipe repair service",
+          "Drain cleaning service"
+        ]
+      },
+      "Roofing & exterior contractors": {
+        "primary": "Roofing contractor",
+        "secondary": [
+          "Gutter cleaning service",
+          "Siding contractor",
+          "Waterproofing company",
+          "Roof inspection service"
+        ]
+      },
+      "Solar & renewable energy installation": {
+        "primary": "Solar energy company",
+        "secondary": [
+          "Solar panel installation",
+          "EV charging station installation",
+          "Energy auditor",
+          "Electrical installation service"
+        ]
+      },
+      "Specialty trade contractors": {
+        "primary": "General contractor",
+        "secondary": [
+          "Masonry contractor",
+          "Flooring contractor",
+          "Carpentry service",
+          "Concrete contractor",
+          "Insulation contractor"
+        ]
+      }
+    },
+    "Logistics & Distribution": {
+      "Last-mile delivery services": {
+        "primary": "Delivery service",
+        "secondary": [
+          "Courier service",
+          "Distribution service",
+          "Freight forwarding service",
+          "Moving company"
+        ]
+      },
+      "Specialty freight & hauling": {
+        "primary": "Moving company",
+        "secondary": [
+          "Freight forwarding service",
+          "Distribution service",
+          "Trucking company",
+          "Container service"
+        ]
+      },
+      "Third-party logistics (3PL)": {
+        "primary": "Distribution service",
+        "secondary": [
+          "Freight forwarding service",
+          "Warehouse",
+          "Cold storage facility",
+          "Delivery service"
+        ]
+      }
+    },
+    "Professional & Business Services": {
+      "Accounting & CPA firms": {
+        "primary": "Accounting firm",
+        "secondary": [
+          "Accountant",
+          "Certified public accountant",
+          "Bookkeeping service",
+          "Tax preparation service",
+          "Auditor"
+        ]
+      },
+      "Commercial insurance brokerage": {
+        "primary": "Insurance agency",
+        "secondary": [
+          "Insurance broker",
+          "Business to business service",
+          "Financial consultant",
+          "Auto insurance agency"
+        ]
+      },
+      "HR outsourcing (PEO)": {
+        "primary": "Human resource consulting",
+        "secondary": [
+          "Employment agency",
+          "Business management consultant",
+          "Payroll service",
+          "Employment consultant"
+        ]
+      },
+      "Payroll processing": {
+        "primary": "Payroll service",
+        "secondary": [
+          "Accounting firm",
+          "Human resource consulting",
+          "Business administration service",
+          "Bookkeeping service"
+        ]
+      },
+      "Tax preparation services": {
+        "primary": "Tax preparation service",
+        "secondary": [
+          "Accountant",
+          "Accounting firm",
+          "Certified public accountant",
+          "Financial consultant"
+        ]
+      }
+    }
+  },
+  "Healthcare": {
+    "Behavioral & Mental Health": {
+      "ABA therapy (autism)": {
+        "primary": "Therapist",
+        "secondary": [
+          "Occupational therapist",
+          "Child psychologist",
+          "Special education school",
+          "Mental health service"
+        ]
+      },
+      "Outpatient behavioral health": {
+        "primary": "Mental health service",
+        "secondary": [
+          "Counselor",
+          "Psychologist",
+          "Psychiatrist",
+          "Family counselor",
+          "Child psychologist"
+        ]
+      },
+      "Substance abuse & addiction treatment": {
+        "primary": "Addiction treatment center",
+        "secondary": [
+          "Alcoholism treatment program",
+          "Mental health service",
+          "Rehabilitation center",
+          "Counselor"
+        ]
+      }
+    },
+    "Dental & Oral Health": {
+      "Dental service organizations (DSO)": {
+        "primary": "Dental clinic",
+        "secondary": [
+          "Dentist",
+          "Cosmetic dentist",
+          "Dental implants periodontist",
+          "Dental laboratory"
+        ]
+      },
+      "Oral surgery practices": {
+        "primary": "Oral surgeon",
+        "secondary": [
+          "Dentist",
+          "Dental clinic",
+          "Dental implants periodontist",
+          "Endodontist"
+        ]
+      },
+      "Orthodontics / Invisalign practices": {
+        "primary": "Orthodontist",
+        "secondary": [
+          "Dentist",
+          "Dental clinic",
+          "Cosmetic dentist"
+        ]
+      }
+    },
+    "Healthcare Services & Admin": {
+      "Diagnostic imaging centers": {
+        "primary": "Diagnostic center",
+        "secondary": [
+          "Medical clinic",
+          "Radiologist",
+          "Medical laboratory",
+          "Hospital department"
+        ]
+      },
+      "Healthcare staffing (travel nursing)": {
+        "primary": "Nursing agency",
+        "secondary": [
+          "Employment agency",
+          "Temp agency",
+          "Staffing agency",
+          "Home health care service"
+        ]
+      },
+      "Medical billing & coding": {
+        "primary": "Medical billing service",
+        "secondary": [
+          "Billing service",
+          "Accounting firm",
+          "BPO company",
+          "Data entry service"
+        ]
+      },
+      "Pharmacy benefit management (PBM)": {
+        "primary": "Pharmacy",
+        "secondary": [
+          "Insurance agency",
+          "Business management consultant"
+        ]
+      }
+    },
+    "Physician & Clinical Services": {
+      "Chiropractic & alternative medicine": {
+        "primary": "Chiropractor",
+        "secondary": [
+          "Acupuncturist",
+          "Naturopathic practitioner",
+          "Massage therapist",
+          "Physical therapist"
+        ]
+      },
+      "Dermatology practices": {
+        "primary": "Dermatologist",
+        "secondary": [
+          "Skin care clinic",
+          "Medical clinic",
+          "Cosmetic dentist",
+          "Doctor"
+        ]
+      },
+      "Nutrition & wellness counseling": {
+        "primary": "Nutritionist",
+        "secondary": [
+          "Dietitian",
+          "Health coach",
+          "Wellness center",
+          "Functional medicine practitioner"
+        ]
+      },
+      "Ophthalmology / optometry practices": {
+        "primary": "Ophthalmologist",
+        "secondary": [
+          "Optometrist",
+          "Eye care center",
+          "Contact lenses supplier",
+          "Optician"
+        ]
+      },
+      "Orthopedic & sports medicine": {
+        "primary": "Orthopedic surgeon",
+        "secondary": [
+          "Sports medicine clinic",
+          "Physical therapist",
+          "Doctor",
+          "Medical clinic"
+        ]
+      },
+      "Primary care / concierge medicine": {
+        "primary": "Family practice physician",
+        "secondary": [
+          "Medical clinic",
+          "Doctor",
+          "General practitioner",
+          "Internist"
+        ]
+      },
+      "Specialty physician practices": {
+        "primary": "Medical clinic",
+        "secondary": [
+          "Internist",
+          "Gastroenterologist",
+          "Cardiologist",
+          "Endocrinologist",
+          "Neurologist",
+          "Allergist"
+        ]
+      },
+      "Urgent care clinics": {
+        "primary": "Urgent care center",
+        "secondary": [
+          "Medical clinic",
+          "Emergency care service",
+          "Walk-in clinic",
+          "Doctor"
+        ]
+      }
+    },
+    "Post-Acute & Long-Term Care": {
+      "Home health agencies": {
+        "primary": "Home health care service",
+        "secondary": [
+          "Nursing agency",
+          "Adult day care center",
+          "Hospice",
+          "Physical therapist"
+        ]
+      },
+      "Hospice & palliative care": {
+        "primary": "Hospice",
+        "secondary": [
+          "Home health care service",
+          "Nursing agency",
+          "Medical clinic"
+        ]
+      },
+      "Long-term acute care hospitals": {
+        "primary": "Rehabilitation center",
+        "secondary": [
+          "Long-term acute care hospital",
+          "Critical care hospital",
+          "Inpatient rehabilitation facility"
+        ]
+      },
+      "Skilled nursing / rehab facilities": {
+        "primary": "Nursing home",
+        "secondary": [
+          "Rehabilitation center",
+          "Physical therapist",
+          "Assisted living facility",
+          "Occupational therapist"
+        ]
+      }
+    }
+  },
+  "Technology-Enabled Services": {
+    "B2B SaaS & Vertical Software": {
+      "ERP / practice management (niche)": {
+        "primary": "Software company",
+        "secondary": [
+          "Computer service",
+          "Business management consultant",
+          "Computer support and services"
+        ]
+      },
+      "Field service management software": {
+        "primary": "Software company",
+        "secondary": [
+          "Computer service",
+          "Computer support and services",
+          "Business management consultant"
+        ]
+      },
+      "Property management software": {
+        "primary": "Software company",
+        "secondary": [
+          "Computer software store",
+          "Real estate agency",
+          "Property management company"
+        ]
+      },
+      "Vertical market SaaS (SMB)": {
+        "primary": "Software company",
+        "secondary": [
+          "Computer software store",
+          "E-commerce service",
+          "Database management company",
+          "Computer service"
+        ]
+      }
+    },
+    "Data, Analytics & Compliance": {
+      "Compliance & regulatory tech": {
+        "primary": "Business management consultant",
+        "secondary": [
+          "Computer service",
+          "Software company",
+          "Environmental consultant",
+          "Certification agency"
+        ]
+      },
+      "Engineering inspection software": {
+        "primary": "Software company",
+        "secondary": [
+          "Building inspector",
+          "Engineering consultant",
+          "Computer service"
+        ]
+      },
+      "Environmental data & reporting": {
+        "primary": "Environmental consultant",
+        "secondary": [
+          "Environmental engineer",
+          "Environmental organization",
+          "Data recovery service"
+        ]
+      },
+      "GIS & mapping services": {
+        "primary": "Mapping service",
+        "secondary": [
+          "Surveyor",
+          "Engineering consultant",
+          "Environmental consultant"
+        ]
+      }
+    },
+    "Digital Marketing & Commerce": {
+      "Digital marketing agencies (niche)": {
+        "primary": "Marketing agency",
+        "secondary": [
+          "Advertising agency",
+          "Internet marketing service",
+          "Design agency",
+          "E commerce agency"
+        ]
+      },
+      "E-commerce enablement services": {
+        "primary": "E-commerce service",
+        "secondary": [
+          "E commerce agency",
+          "Marketing agency",
+          "Computer consultant",
+          "Advertising agency"
+        ]
+      },
+      "SEO / content marketing platforms": {
+        "primary": "Internet marketing service",
+        "secondary": [
+          "Marketing agency",
+          "Advertising agency",
+          "E commerce agency"
+        ]
+      }
+    },
+    "Managed Services & IT": {
+      "AV & unified communications": {
+        "primary": "Audio visual equipment supplier",
+        "secondary": [
+          "Audio visual consultant",
+          "Audio visual equipment rental service",
+          "Electronics company",
+          "Telecommunications service provider"
+        ]
+      },
+      "Cloud migration & managed cloud": {
+        "primary": "Computer support and services",
+        "secondary": [
+          "Computer consultant",
+          "Computer networking center",
+          "Data recovery service",
+          "Computer service"
+        ]
+      },
+      "Cybersecurity services": {
+        "primary": "Computer security service",
+        "secondary": [
+          "Computer support and services",
+          "Computer consultant",
+          "Computer networking center"
+        ]
+      },
+      "Managed IT / MSP": {
+        "primary": "Computer support and services",
+        "secondary": [
+          "Computer repair service",
+          "Computer networking center",
+          "Computer consultant",
+          "Computer service"
+        ]
+      }
+    },
+    "Tech-Enabled BPO": {
+      "Claims processing & administration": {
+        "primary": "Insurance agency",
+        "secondary": [
+          "Billing service",
+          "BPO company",
+          "Business administration service"
+        ]
+      },
+      "Document management & imaging": {
+        "primary": "Data entry service",
+        "secondary": [
+          "Blueprint service",
+          "Digital printing service",
+          "Document preparation service",
+          "BPO company"
+        ]
+      },
+      "Outsourced finance & accounting (F&A)": {
+        "primary": "Accounting firm",
+        "secondary": [
+          "Bookkeeping service",
+          "BPO company",
+          "Business administration service",
+          "Payroll service"
+        ]
+      },
+      "Revenue cycle management (RCM)": {
+        "primary": "Medical billing service",
+        "secondary": [
+          "Billing service",
+          "BPO company",
+          "Accountant",
+          "Financial consultant"
+        ]
+      }
+    }
+  }
+}
