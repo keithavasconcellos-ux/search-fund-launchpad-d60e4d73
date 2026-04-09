@@ -107,6 +107,7 @@ export async function addNote(
 
 // Viewport-based fetch — only loads pins inside the current map bounds.
 // Called on every map idle event (after pan/zoom stops) like Airbnb.
+// When classification filters are active, uses !inner join to restrict.
 export async function getMapPinsInBounds(
   bounds: { north: number; south: number; east: number; west: number },
   filters?: {
@@ -114,10 +115,15 @@ export async function getMapPinsInBounds(
     crm_stage?: CrmStage
     state_abbr?: string
     vertical?: string
+    category?: string
     business_type?: string
   },
   limit = 500
 ) {
+  // Use !inner join when classification filters active so PostgREST filters work on joined table
+  const hasClsFilter = !!(filters?.vertical || filters?.category || filters?.business_type)
+  const clsJoin = hasClsFilter ? 'business_classifications!inner' : 'business_classifications'
+
   let query = supabase
     .from('businesses')
     .select(`
@@ -131,7 +137,7 @@ export async function getMapPinsInBounds(
       crm_stage,
       review_status,
       website,
-      classification:business_classifications(
+      classification:${clsJoin}(
         vertical, category, business_type, gbp_confidence
       )
     `)
@@ -147,9 +153,56 @@ export async function getMapPinsInBounds(
   if (filters?.crm_stage)     query = query.eq('crm_stage', filters.crm_stage)
   if (filters?.state_abbr)    query = query.eq('state_abbr', filters.state_abbr)
 
+  // Classification filters applied on the joined table
+  if (filters?.vertical)       query = query.eq('business_classifications.vertical', filters.vertical)
+  if (filters?.category)       query = query.eq('business_classifications.category', filters.category)
+  if (filters?.business_type)  query = query.eq('business_classifications.business_type', filters.business_type)
+
   const { data, error } = await query
   if (error) throw error
   return data ?? []
+}
+
+// Fetch distinct L1→L2→L3 taxonomy from the DB for the drill-down filter UI.
+export async function getClassificationTaxonomy(): Promise<
+  Record<string, Record<string, string[]>>
+> {
+  // Paginate since free tier limits per-request
+  let page = 0
+  const all: Array<{ vertical: string | null; category: string | null; business_type: string | null }> = []
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('business_classifications')
+      .select('vertical, category, business_type')
+      .not('vertical', 'is', null)
+      .range(page * 1000, (page + 1) * 1000 - 1)
+
+    if (error || !data || data.length === 0) break
+    all.push(...data)
+    page++
+    if (data.length < 1000) break
+  }
+
+  const result: Record<string, Record<string, Set<string>>> = {}
+  for (const r of all) {
+    if (!r.vertical) continue
+    if (!result[r.vertical]) result[r.vertical] = {}
+    if (r.category) {
+      if (!result[r.vertical][r.category]) result[r.vertical][r.category] = new Set()
+      if (r.business_type) result[r.vertical][r.category].add(r.business_type)
+    }
+  }
+
+  // Convert Sets → sorted arrays
+  const out: Record<string, Record<string, string[]>> = {}
+  for (const [v, cats] of Object.entries(result)) {
+    out[v] = {}
+    for (const [c, types] of Object.entries(cats)) {
+      out[v][c] = Array.from(types).sort()
+    }
+  }
+  return out
 }
 
 // Legacy full-set fetch — still used by other pages

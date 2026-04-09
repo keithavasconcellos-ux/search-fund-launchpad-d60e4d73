@@ -1,35 +1,32 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { GoogleMap, useJsApiLoader, OverlayView } from '@react-google-maps/api';
-import { SlidersHorizontal, X, Loader2, MapPin } from 'lucide-react';
-import { getMapPinsInBounds } from '@/lib/queries/businesses';
+import { SlidersHorizontal, X, Loader2, MapPin, ChevronRight, ChevronDown, RotateCcw } from 'lucide-react';
+import { getMapPinsInBounds, getClassificationTaxonomy } from '@/lib/queries/businesses';
 import { StageBadge, ReviewBadge } from '@/components/StatusBadge';
 import type { CrmStage, ReviewStatus } from '@/types/acquira';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string;
-
-// New England center
 const NE_CENTER = { lat: 42.15, lng: -71.8 };
 const DEFAULT_ZOOM = 9;
 
-// Dark, minimal map style matching app theme
 const MAP_STYLES: google.maps.MapTypeStyle[] = [
-  { elementType: 'geometry',                      stylers: [{ color: '#0f1629' }] },
-  { elementType: 'labels.text.stroke',            stylers: [{ color: '#0f1629' }] },
-  { elementType: 'labels.text.fill',              stylers: [{ color: '#3d5a8a' }] },
-  { featureType: 'road',        elementType: 'geometry',       stylers: [{ color: '#162040' }] },
+  { elementType: 'geometry',                         stylers: [{ color: '#0f1629' }] },
+  { elementType: 'labels.text.stroke',               stylers: [{ color: '#0f1629' }] },
+  { elementType: 'labels.text.fill',                 stylers: [{ color: '#3d5a8a' }] },
+  { featureType: 'road',        elementType: 'geometry',         stylers: [{ color: '#162040' }] },
   { featureType: 'road',        elementType: 'labels.text.fill', stylers: [{ color: '#2d4a7a' }] },
-  { featureType: 'road.highway',elementType: 'geometry',       stylers: [{ color: '#1a2f5c' }] },
-  { featureType: 'water',       elementType: 'geometry',       stylers: [{ color: '#080f1e' }] },
-  { featureType: 'landscape',   elementType: 'geometry',       stylers: [{ color: '#0d1526' }] },
+  { featureType: 'road.highway',elementType: 'geometry',         stylers: [{ color: '#1a2f5c' }] },
+  { featureType: 'water',       elementType: 'geometry',         stylers: [{ color: '#080f1e' }] },
+  { featureType: 'landscape',   elementType: 'geometry',         stylers: [{ color: '#0d1526' }] },
   { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#1d2f5c' }] },
   { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#4a6fa5' }] },
   { featureType: 'administrative.province', elementType: 'labels.text.fill', stylers: [{ color: '#3d5a8a' }] },
-  { featureType: 'poi',         stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit',     stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi',    stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit',stylers: [{ visibility: 'off' }] },
 ];
 
-// Pin color by review status
 const PIN_COLORS: Record<string, string> = {
   target:     '#22d3a7',
   watch:      '#f59e0b',
@@ -39,10 +36,10 @@ const PIN_COLORS: Record<string, string> = {
 
 const REVIEW_OPTIONS = [
   { value: '',           label: 'All statuses' },
-  { value: 'target',     label: 'Target' },
-  { value: 'watch',      label: 'Watch' },
-  { value: 'pass',       label: 'Pass' },
-  { value: 'unreviewed', label: 'Unreviewed' },
+  { value: 'target',     label: '● Target' },
+  { value: 'watch',      label: '● Watch' },
+  { value: 'pass',       label: '● Pass' },
+  { value: 'unreviewed', label: '● Unreviewed' },
 ] as const;
 
 const NE_STATES = ['CT', 'MA', 'RI', 'NH', 'VT', 'ME', 'NY', 'NJ'];
@@ -50,7 +47,142 @@ const NE_STATES = ['CT', 'MA', 'RI', 'NH', 'VT', 'ME', 'NY', 'NJ'];
 type Bounds = { north: number; south: number; east: number; west: number };
 type Pin = Awaited<ReturnType<typeof getMapPinsInBounds>>[number];
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Drill-Down Filter Section ────────────────────────────────────────────────
+interface DrillDownProps {
+  taxonomy: Record<string, Record<string, string[]>>
+  vertical: string
+  category: string
+  businessType: string
+  onVerticalChange: (v: string) => void
+  onCategoryChange: (c: string) => void
+  onBusinessTypeChange: (bt: string) => void
+}
+
+function DrillDownFilter({
+  taxonomy, vertical, category, businessType,
+  onVerticalChange, onCategoryChange, onBusinessTypeChange,
+}: DrillDownProps) {
+  const verticals = Object.keys(taxonomy).sort()
+  const categories = vertical ? Object.keys(taxonomy[vertical] ?? {}).sort() : []
+  const businessTypes = (vertical && category) ? (taxonomy[vertical]?.[category] ?? []) : []
+
+  const hasAnyFilter = !!(vertical || category || businessType)
+
+  return (
+    <div>
+      {/* Section Header */}
+      <div className="flex items-center justify-between mb-3">
+        <label className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider">
+          Industry Drill-Down
+        </label>
+        {hasAnyFilter && (
+          <button
+            onClick={() => { onVerticalChange(''); onCategoryChange(''); onBusinessTypeChange(''); }}
+            className="flex items-center gap-1 font-mono text-[10px] text-primary hover:text-primary/80 transition-colors"
+          >
+            <RotateCcw className="w-2.5 h-2.5" />Reset
+          </button>
+        )}
+      </div>
+
+      {/* L1 — Vertical */}
+      <div className="space-y-1 mb-3">
+        <div className="font-mono text-[9px] text-text-tertiary uppercase tracking-widest mb-1 flex items-center gap-1">
+          <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded bg-primary/20 text-primary font-bold text-[8px]">1</span>
+          Vertical
+        </div>
+        <div className="flex flex-col gap-0.5">
+          {verticals.map(v => (
+            <button
+              key={v}
+              onClick={() => {
+                if (vertical === v) { onVerticalChange(''); onCategoryChange(''); onBusinessTypeChange(''); }
+                else { onVerticalChange(v); onCategoryChange(''); onBusinessTypeChange(''); }
+              }}
+              className={`w-full text-left flex items-center justify-between px-2 py-1.5 rounded-md text-xs transition-all ${
+                vertical === v
+                  ? 'bg-primary/15 text-primary border border-primary/30'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background-tertiary'
+              }`}
+            >
+              <span>{v}</span>
+              {vertical === v
+                ? <ChevronDown className="w-3 h-3 flex-shrink-0" />
+                : <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-40" />
+              }
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* L2 — Category (only when L1 selected) */}
+      {vertical && categories.length > 0 && (
+        <div className="ml-3 border-l border-border pl-3 mb-3">
+          <div className="font-mono text-[9px] text-text-tertiary uppercase tracking-widest mb-1 flex items-center gap-1">
+            <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded bg-blue-500/20 text-blue-400 font-bold text-[8px]">2</span>
+            Category
+          </div>
+          <div className="flex flex-col gap-0.5">
+            {categories.map(c => (
+              <button
+                key={c}
+                onClick={() => {
+                  if (category === c) { onCategoryChange(''); onBusinessTypeChange(''); }
+                  else { onCategoryChange(c); onBusinessTypeChange(''); }
+                }}
+                className={`w-full text-left flex items-center justify-between px-2 py-1.5 rounded-md text-xs transition-all ${
+                  category === c
+                    ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background-tertiary'
+                }`}
+              >
+                <span className="leading-tight">{c}</span>
+                {category === c
+                  ? <ChevronDown className="w-3 h-3 flex-shrink-0" />
+                  : <ChevronRight className="w-3 h-3 flex-shrink-0 opacity-40" />
+                }
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* L3 — Business Type (only when L2 selected) */}
+      {category && businessTypes.length > 0 && (
+        <div className="ml-6 border-l border-border pl-3 mb-2">
+          <div className="font-mono text-[9px] text-text-tertiary uppercase tracking-widest mb-1 flex items-center gap-1">
+            <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded bg-teal-500/20 text-teal-400 font-bold text-[8px]">3</span>
+            Business Type
+          </div>
+          <div className="flex flex-col gap-0.5">
+            {businessTypes.map(bt => (
+              <button
+                key={bt}
+                onClick={() => onBusinessTypeChange(businessType === bt ? '' : bt)}
+                className={`w-full text-left px-2 py-1.5 rounded-md text-xs transition-all ${
+                  businessType === bt
+                    ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background-tertiary'
+                }`}
+              >
+                {bt}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Active filter breadcrumb */}
+      {hasAnyFilter && (
+        <div className="mt-2 px-2 py-1.5 rounded-md bg-background-tertiary border border-border text-[10px] font-mono text-muted-foreground leading-relaxed">
+          {[vertical, category, businessType].filter(Boolean).join(' › ')}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function MapView() {
   const [pins, setPins] = useState<Pin[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,6 +190,9 @@ export default function MapView() {
   const [showFilters, setShowFilters] = useState(true);
   const [filterReview, setFilterReview] = useState<ReviewStatus | ''>('');
   const [filterState, setFilterState] = useState<string>('');
+  const [filterVertical, setFilterVertical] = useState<string>('');
+  const [filterCategory, setFilterCategory] = useState<string>('');
+  const [filterBusinessType, setFilterBusinessType] = useState<string>('');
   const [pinCount, setPinCount] = useState<number>(0);
 
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -69,8 +204,15 @@ export default function MapView() {
     id: 'google-map-script',
   });
 
+  // Fetch taxonomy once for the drill-down UI
+  const { data: taxonomy = {} } = useQuery({
+    queryKey: ['classification-taxonomy'],
+    queryFn: getClassificationTaxonomy,
+    staleTime: 1000 * 60 * 60, // 1 hour cache
+  });
+
   // ── Fetch pins for the current viewport ──────────────────────────────────
-  const fetchPinsForViewport = useCallback(async (map: google.maps.Map) => {
+  const fetchPinsForViewport = useCallback(async (map: google.maps.Map, force = false) => {
     const b = map.getBounds();
     if (!b) return;
 
@@ -81,8 +223,7 @@ export default function MapView() {
       west:  b.getSouthWest().lng(),
     };
 
-    // Skip if bounds haven't meaningfully changed (< 0.01° diff on all sides)
-    if (lastBounds.current) {
+    if (!force && lastBounds.current) {
       const prev = lastBounds.current;
       if (
         Math.abs(bounds.north - prev.north) < 0.01 &&
@@ -98,8 +239,11 @@ export default function MapView() {
 
     try {
       const data = await getMapPinsInBounds(bounds, {
-        review_status: filterReview as ReviewStatus || undefined,
-        state_abbr:    filterState || undefined,
+        review_status:  filterReview as ReviewStatus || undefined,
+        state_abbr:     filterState || undefined,
+        vertical:       filterVertical || undefined,
+        category:       filterCategory || undefined,
+        business_type:  filterBusinessType || undefined,
       }, 500);
       setPins(data);
       setPinCount(data.length);
@@ -108,9 +252,8 @@ export default function MapView() {
     } finally {
       setLoading(false);
     }
-  }, [filterReview, filterState]);
+  }, [filterReview, filterState, filterVertical, filterCategory, filterBusinessType]);
 
-  // ── onIdle fires after every pan/zoom completes — debounced 300ms ─────────
   const onIdle = useCallback(() => {
     if (!mapRef.current) return;
     if (idleDebounce.current) clearTimeout(idleDebounce.current);
@@ -119,26 +262,37 @@ export default function MapView() {
     }, 300);
   }, [fetchPinsForViewport]);
 
-  // Re-fetch when filters change
+  // Re-fetch when any filter changes
   useEffect(() => {
     if (mapRef.current) {
-      lastBounds.current = null; // force re-fetch
-      fetchPinsForViewport(mapRef.current);
+      lastBounds.current = null;
+      fetchPinsForViewport(mapRef.current, true);
     }
-  }, [filterReview, filterState, fetchPinsForViewport]);
+  }, [filterReview, filterState, filterVertical, filterCategory, filterBusinessType, fetchPinsForViewport]);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
   }, []);
 
+  // Count active filters for the badge
+  const activeFilterCount = [filterReview, filterState, filterVertical, filterCategory, filterBusinessType].filter(Boolean).length;
+
   return (
     <div className="h-screen flex overflow-hidden relative">
 
-      {/* ── Filter Sidebar ─────────────────────────────────────────────────── */}
+      {/* ── Filter Sidebar ───────────────────────────────────────────── */}
       {showFilters && (
-        <div className="w-[240px] flex-shrink-0 bg-background-secondary border-r border-border flex flex-col z-10">
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <span className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider">Filters</span>
+        <div className="w-[260px] flex-shrink-0 bg-background-secondary border-r border-border flex flex-col z-10">
+          {/* Header */}
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider">Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-primary text-primary-foreground font-mono text-[9px] font-bold">
+                  {activeFilterCount}
+                </span>
+              )}
+            </div>
             <button onClick={() => setShowFilters(false)} className="text-text-tertiary hover:text-foreground transition-colors">
               <X className="w-3.5 h-3.5" />
             </button>
@@ -149,31 +303,48 @@ export default function MapView() {
             {/* Viewport stat */}
             <div className="bg-background-tertiary rounded-lg p-3">
               <div className="font-mono text-[11px] text-foreground font-medium">
-                {loading ? 'Loading…' : `${pinCount} businesses`}
+                {loading ? 'Loading…' : `${pinCount.toLocaleString()} businesses`}
               </div>
-              <div className="font-mono text-[10px] text-text-tertiary mt-0.5">in current view</div>
+              <div className="font-mono text-[10px] text-text-tertiary mt-0.5">in current viewport</div>
             </div>
 
-            {/* Review Status */}
-            <div>
+            {/* ── Industry Drill-Down ────────────────────────── */}
+            <div className="border-b border-border pb-5">
+              <DrillDownFilter
+                taxonomy={taxonomy}
+                vertical={filterVertical}
+                category={filterCategory}
+                businessType={filterBusinessType}
+                onVerticalChange={setFilterVertical}
+                onCategoryChange={setFilterCategory}
+                onBusinessTypeChange={setFilterBusinessType}
+              />
+            </div>
+
+            {/* ── Review Status ──────────────────────────────── */}
+            <div className="border-b border-border pb-5">
               <label className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider block mb-2">Review Status</label>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {REVIEW_OPTIONS.map(opt => (
-                  <label key={opt.value} className="flex items-center gap-2 py-0.5 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="review"
-                      checked={filterReview === opt.value}
-                      onChange={() => setFilterReview(opt.value as ReviewStatus | '')}
-                      className="accent-primary"
-                    />
-                    <span className="text-sm text-muted-foreground hover:text-foreground transition-colors">{opt.label}</span>
-                  </label>
+                  <button
+                    key={opt.value}
+                    onClick={() => setFilterReview(opt.value as ReviewStatus | '')}
+                    className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all ${
+                      filterReview === opt.value
+                        ? 'bg-primary/15 text-primary border border-primary/30'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-background-tertiary'
+                    }`}
+                  >
+                    {opt.value && (
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: PIN_COLORS[opt.value] ?? '#888' }} />
+                    )}
+                    <span>{opt.label.replace('● ', '')}</span>
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* State quick-filter */}
+            {/* ── State ─────────────────────────────────────── */}
             <div>
               <label className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider block mb-2">State</label>
               <div className="flex flex-wrap gap-1.5">
@@ -190,14 +361,14 @@ export default function MapView() {
               </div>
             </div>
 
-            {/* Legend */}
+            {/* ── Legend ────────────────────────────────────── */}
             <div>
               <label className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider block mb-2">Legend</label>
-              <div className="space-y-1.5">
+              <div className="grid grid-cols-2 gap-y-1.5 gap-x-2">
                 {Object.entries(PIN_COLORS).map(([status, color]) => (
-                  <div key={status} className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: color }} />
-                    <span className="font-mono text-[11px] text-muted-foreground capitalize">{status}</span>
+                  <div key={status} className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full border border-white/20 flex-shrink-0" style={{ backgroundColor: color }} />
+                    <span className="font-mono text-[10px] text-muted-foreground capitalize">{status}</span>
                   </div>
                 ))}
               </div>
@@ -207,7 +378,7 @@ export default function MapView() {
         </div>
       )}
 
-      {/* ── Map Area ───────────────────────────────────────────────────────── */}
+      {/* ── Map Area ─────────────────────────────────────────────────── */}
       <div className="flex-1 relative">
 
         {/* Top controls */}
@@ -215,25 +386,28 @@ export default function MapView() {
           {!showFilters && (
             <button
               onClick={() => setShowFilters(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-card/90 backdrop-blur border border-border text-sm text-muted-foreground hover:text-foreground shadow-lg transition-colors"
+              className="relative flex items-center gap-1.5 px-3 py-2 rounded-lg bg-card/90 backdrop-blur border border-border text-sm text-muted-foreground hover:text-foreground shadow-lg transition-colors"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5" />Filters
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4 h-4 rounded-full bg-primary text-primary-foreground font-mono text-[9px] font-bold">
+                  {activeFilterCount}
+                </span>
+              )}
             </button>
           )}
         </div>
 
-        {/* Viewport count + loading */}
+        {/* Pin count + loading */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
-          {loading && (
+          {loading ? (
             <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-card/90 backdrop-blur border border-border text-xs font-mono text-primary shadow-lg">
-              <Loader2 className="w-3 h-3 animate-spin" />
-              Loading…
+              <Loader2 className="w-3 h-3 animate-spin" />Loading…
             </div>
-          )}
-          {!loading && (
+          ) : (
             <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-card/90 backdrop-blur border border-border text-xs font-mono text-muted-foreground shadow-lg">
-              <MapPin className="w-3 h-3" />
-              {pinCount} shown
+              <MapPin className="w-3 h-3" />{pinCount.toLocaleString()} shown
             </div>
           )}
         </div>
@@ -270,8 +444,8 @@ export default function MapView() {
                 >
                   <div
                     onClick={(e) => { e.stopPropagation(); setSelectedPin(pin); }}
-                    className="cursor-pointer -translate-x-1/2 -translate-y-1/2"
-                    style={{ position: 'absolute' }}
+                    className="cursor-pointer"
+                    style={{ position: 'absolute', transform: 'translate(-50%, -50%)' }}
                   >
                     <div
                       style={{
@@ -279,8 +453,10 @@ export default function MapView() {
                         height: isSelected ? 14 : 10,
                         borderRadius: '50%',
                         backgroundColor: color,
-                        border: isSelected ? `2px solid white` : `1.5px solid rgba(255,255,255,0.3)`,
-                        boxShadow: isSelected ? `0 0 0 4px ${color}40, 0 2px 8px rgba(0,0,0,0.5)` : `0 1px 4px rgba(0,0,0,0.4)`,
+                        border: isSelected ? '2px solid white' : '1.5px solid rgba(255,255,255,0.3)',
+                        boxShadow: isSelected
+                          ? `0 0 0 4px ${color}40, 0 2px 8px rgba(0,0,0,0.5)`
+                          : '0 1px 4px rgba(0,0,0,0.4)',
                         transition: 'all 0.15s ease',
                       }}
                     />
@@ -295,12 +471,10 @@ export default function MapView() {
           </div>
         )}
 
-        {/* ── Selected Pin Info Card (Airbnb-style bottom card) ─────────────── */}
+        {/* ── Pin info card ──────────────────────────────────────────── */}
         {selectedPin && (
-          <div
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[420px] max-w-[90vw]"
-            style={{ animation: 'slideUp 0.2s ease' }}
-          >
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[420px] max-w-[90vw]"
+               style={{ animation: 'slideUp 0.2s ease' }}>
             <div className="bg-card/98 backdrop-blur-md border border-border/80 rounded-2xl p-5 shadow-2xl">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -326,26 +500,33 @@ export default function MapView() {
                 const cls = Array.isArray(selectedPin.classification)
                   ? selectedPin.classification[0]
                   : selectedPin.classification;
-                return cls?.business_type ? (
-                  <div className="font-mono text-[11px] text-muted-foreground mt-2.5">
-                    {cls.business_type}{cls.vertical ? ` · ${cls.vertical}` : ''}
-                    {cls.gbp_confidence && (
-                      <span className={`ml-2 font-mono text-[10px] ${
-                        cls.gbp_confidence === 'High' ? 'text-success' :
-                        cls.gbp_confidence === 'Medium' ? 'text-warning' : 'text-text-tertiary'
-                      }`}>● {cls.gbp_confidence}</span>
+                if (!cls) return null;
+                return (
+                  <div className="mt-2.5 space-y-0.5">
+                    {cls.vertical && (
+                      <div className="font-mono text-[10px] text-text-tertiary">
+                        {cls.vertical}
+                        {cls.category && <span className="text-muted-foreground"> › {cls.category}</span>}
+                      </div>
+                    )}
+                    {cls.business_type && (
+                      <div className="font-mono text-[11px] text-foreground">
+                        {cls.business_type}
+                        {cls.gbp_confidence && (
+                          <span className={`ml-2 text-[10px] ${
+                            cls.gbp_confidence === 'High'   ? 'text-success' :
+                            cls.gbp_confidence === 'Medium' ? 'text-warning' : 'text-text-tertiary'
+                          }`}>● {cls.gbp_confidence}</span>
+                        )}
+                      </div>
                     )}
                   </div>
-                ) : null;
+                );
               })()}
 
               {selectedPin.website && (
-                <a
-                  href={selectedPin.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 mt-3 font-mono text-[11px] text-primary hover:text-primary/80 transition-colors"
-                >
+                <a href={selectedPin.website} target="_blank" rel="noopener noreferrer"
+                   className="inline-flex items-center gap-1 mt-3 font-mono text-[11px] text-primary hover:text-primary/80 transition-colors">
                   Visit website →
                 </a>
               )}

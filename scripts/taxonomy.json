@@ -1,0 +1,52 @@
+{
+  "Business Services": {
+    "Consumer Services": [
+      "Auto repair & maintenance",
+      "Funeral & cemetery services",
+      "Residential services franchises",
+      "Veterinary clinics"
+    ],
+    "Education & Training": [
+      "Early childhood education (daycare)"
+    ],
+    "Facility & Specialty Services": [
+      "HVAC maintenance & service"
+    ],
+    "Logistics & Distribution": [
+      "Last-mile delivery services",
+      "Third-party logistics (3PL)"
+    ],
+    "Professional & Business Services": [
+      "Accounting & CPA firms",
+      "Commercial insurance brokerage",
+      "HR outsourcing (PEO)",
+      "Tax preparation services"
+    ]
+  },
+  "Out of Scope": {
+    "Consumer Services": [
+      "Funeral & cemetery services"
+    ]
+  },
+  "Healthcare": {
+    "Dental & Oral Health": [
+      "Dental service organizations (DSO)"
+    ],
+    "Healthcare Services & Admin": [
+      "Diagnostic imaging centers",
+      "Pharmacy benefit management (PBM)"
+    ],
+    "Physician & Clinical Services": [
+      "Dermatology practices",
+      "Orthopedic & sports medicine"
+    ]
+  },
+  "Technology-Enabled Services": {
+    "B2B SaaS & Vertical Software": [
+      "Property management software"
+    ],
+    "Managed Services & IT": [
+      "AV & unified communications"
+    ]
+  }
+}
