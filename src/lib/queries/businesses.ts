@@ -68,13 +68,13 @@ export async function updateCrmStage(
 ) {
   const { error: bizError } = await supabase
     .from('businesses')
-    .update({ crm_stage: toStage })
+    .update({ crm_stage: toStage } as any)
     .eq('id', businessId)
 
   if (bizError) throw bizError
 
-  const { error: actError } = await supabase
-    .from('activities')
+  const { error: actError } = await (supabase
+    .from('activities') as any)
     .insert({
       business_id: businessId,
       type: 'stage_change',
@@ -93,8 +93,8 @@ export async function addNote(
   body: string,
   userId: string
 ) {
-  const { error } = await supabase
-    .from('activities')
+  const { error } = await (supabase
+    .from('activities') as any)
     .insert({
       business_id: businessId,
       type: 'note',
@@ -103,4 +103,45 @@ export async function addNote(
     })
 
   if (error) throw error
+}
+
+// Lightweight fetch for map pins — only fields needed to render markers + tooltip
+export async function getMapPins(filters?: {
+  vertical?: string
+  business_type?: string
+  review_status?: ReviewStatus
+  state_abbr?: string
+  county?: string
+  crm_stage?: CrmStage
+}) {
+  let query = supabase
+    .from('businesses')
+    .select(`
+      id,
+      name,
+      address,
+      lat,
+      lng,
+      state_abbr,
+      state,
+      county,
+      crm_stage,
+      review_status,
+      website,
+      classification:business_classifications(
+        vertical, category, business_type, gbp_confidence
+      )
+    `)
+    .not('lat', 'is', null)
+    .not('lng', 'is', null)
+    .limit(5000)
+
+  if (filters?.review_status) query = query.eq('review_status', filters.review_status)
+  if (filters?.crm_stage)     query = query.eq('crm_stage', filters.crm_stage)
+  if (filters?.state_abbr)    query = query.eq('state_abbr', filters.state_abbr)
+  if (filters?.county)        query = query.eq('county', filters.county)
+
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
 }

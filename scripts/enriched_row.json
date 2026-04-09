@@ -1,0 +1,40 @@
+{
+  "headers": [
+    "Vertical",
+    "Category",
+    "Business Type",
+    "GBP Confidence",
+    "Match Status",
+    "#",
+    "Business Name",
+    "Address",
+    "Website",
+    "Google Types",
+    "lat",
+    "lng",
+    "geocode_status",
+    "country",
+    "state_abbr",
+    "state",
+    "county"
+  ],
+  "sample": {
+    "Vertical": "Business Services",
+    "Category": "Consumer Services",
+    "Business Type": "Auto repair & maintenance",
+    "GBP Confidence": "High",
+    "Match Status": "Classified",
+    "#": "14",
+    "Business Name": "TA Express Travel Center",
+    "Address": "3 E Industrial Rd, Branford, CT 06405, USA",
+    "Website": "https://www.ta-petro.com/location/ct/ta-new-haven",
+    "Google Types": "rest_stop|convenience_store|car_repair|food_store|food|store|point_of_interest|service|establishment",
+    "lat": "41.29771984",
+    "lng": "-72.75797617",
+    "geocode_status": "matched",
+    "country": "USA",
+    "state_abbr": "CT",
+    "state": "Connecticut",
+    "county": "New Haven County"
+  }
+}
