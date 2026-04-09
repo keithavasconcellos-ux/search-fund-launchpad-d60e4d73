@@ -34,6 +34,7 @@ export type Database = {
           sf_score?: number
           created_at?: string
         }
+        Relationships: []
       }
       naics_benchmarks: {
         Row: {
@@ -54,6 +55,7 @@ export type Database = {
           revenue_per_emp_high?: number
           updated_at?: string
         }
+        Relationships: []
       }
       user_settings: {
         Row: {
@@ -83,6 +85,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       businesses: {
         Row: {
@@ -199,6 +202,15 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "businesses_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       business_classifications: {
         Row: {
@@ -237,6 +249,15 @@ export type Database = {
           classified_at?: string
           classified_by?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "business_classifications_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       contacts: {
         Row: {
@@ -287,6 +308,15 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       activities: {
         Row: {
@@ -325,6 +355,15 @@ export type Database = {
           created_by?: string | null
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "activities_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       email_templates: {
         Row: {
@@ -360,6 +399,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       email_threads: {
         Row: {
@@ -422,6 +462,15 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "email_threads_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       dd_documents: {
         Row: {
@@ -454,6 +503,15 @@ export type Database = {
           file_size_kb?: number | null
           uploaded_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "dd_documents_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       dd_memos: {
         Row: {
@@ -507,6 +565,15 @@ export type Database = {
           exported_at?: string | null
           export_format?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "dd_memos_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {
@@ -516,6 +583,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
       [_ in never]: never
     }
   }
