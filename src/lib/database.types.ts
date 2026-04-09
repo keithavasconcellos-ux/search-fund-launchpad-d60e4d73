@@ -122,6 +122,11 @@ export type Database = {
           cim_url: string | null
           cim_uploaded_at: string | null
           added_via: string | null
+          state_abbr: string | null
+          state: string | null
+          county: string | null
+          country: string | null
+          geocode_status: string | null
           last_activity_at: string | null
           created_at: string
           updated_at: string
@@ -160,6 +165,11 @@ export type Database = {
           cim_url?: string | null
           cim_uploaded_at?: string | null
           added_via?: string | null
+          state_abbr?: string | null
+          state?: string | null
+          county?: string | null
+          country?: string | null
+          geocode_status?: string | null
           last_activity_at?: string | null
           created_at?: string
           updated_at?: string
@@ -198,6 +208,11 @@ export type Database = {
           cim_url?: string | null
           cim_uploaded_at?: string | null
           added_via?: string | null
+          state_abbr?: string | null
+          state?: string | null
+          county?: string | null
+          country?: string | null
+          geocode_status?: string | null
           last_activity_at?: string | null
           created_at?: string
           updated_at?: string

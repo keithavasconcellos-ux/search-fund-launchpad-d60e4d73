@@ -105,7 +105,54 @@ export async function addNote(
   if (error) throw error
 }
 
-// Lightweight fetch for map pins — only fields needed to render markers + tooltip
+// Viewport-based fetch — only loads pins inside the current map bounds.
+// Called on every map idle event (after pan/zoom stops) like Airbnb.
+export async function getMapPinsInBounds(
+  bounds: { north: number; south: number; east: number; west: number },
+  filters?: {
+    review_status?: ReviewStatus
+    crm_stage?: CrmStage
+    state_abbr?: string
+    vertical?: string
+    business_type?: string
+  },
+  limit = 500
+) {
+  let query = supabase
+    .from('businesses')
+    .select(`
+      id,
+      name,
+      address,
+      lat,
+      lng,
+      state_abbr,
+      county,
+      crm_stage,
+      review_status,
+      website,
+      classification:business_classifications(
+        vertical, category, business_type, gbp_confidence
+      )
+    `)
+    .not('lat', 'is', null)
+    .not('lng', 'is', null)
+    .gte('lat', bounds.south)
+    .lte('lat', bounds.north)
+    .gte('lng', bounds.west)
+    .lte('lng', bounds.east)
+    .limit(limit)
+
+  if (filters?.review_status) query = query.eq('review_status', filters.review_status)
+  if (filters?.crm_stage)     query = query.eq('crm_stage', filters.crm_stage)
+  if (filters?.state_abbr)    query = query.eq('state_abbr', filters.state_abbr)
+
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
+}
+
+// Legacy full-set fetch — still used by other pages
 export async function getMapPins(filters?: {
   vertical?: string
   business_type?: string
@@ -117,17 +164,8 @@ export async function getMapPins(filters?: {
   let query = supabase
     .from('businesses')
     .select(`
-      id,
-      name,
-      address,
-      lat,
-      lng,
-      state_abbr,
-      state,
-      county,
-      crm_stage,
-      review_status,
-      website,
+      id, name, address, lat, lng, state_abbr, state, county,
+      crm_stage, review_status, website,
       classification:business_classifications(
         vertical, category, business_type, gbp_confidence
       )
