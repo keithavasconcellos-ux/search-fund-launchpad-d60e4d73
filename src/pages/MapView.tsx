@@ -338,6 +338,8 @@ export default function MapView() {
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ['businesses'] });
       setAddedToCrm(prev => new Set(prev).add(id));
+      // Update the local pin so the popup reflects the change immediately
+      setPins(prev => prev.map(p => p.id === id ? { ...p, in_crm: true, crm_stage: 'identified' } : p));
     },
   });
 
@@ -745,7 +747,7 @@ export default function MapView() {
               )}
 
               <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
-                {addedToCrm.has(selectedPin.id) ? (
+                {(selectedPin.in_crm || addedToCrm.has(selectedPin.id)) ? (
                   <div className="flex-1 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium text-center">
                     ✓ In CRM
                   </div>
