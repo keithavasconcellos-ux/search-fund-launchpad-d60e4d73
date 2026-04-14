@@ -338,6 +338,8 @@ export default function MapView() {
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ['businesses'] });
       setAddedToCrm(prev => new Set(prev).add(id));
+      // Update the local pin so the popup reflects the change immediately
+      setPins(prev => prev.map(p => p.id === id ? { ...p, in_crm: true, crm_stage: 'identified' } : p));
     },
   });
 
