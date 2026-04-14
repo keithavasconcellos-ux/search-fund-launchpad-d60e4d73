@@ -5,7 +5,8 @@ import { SlidersHorizontal, X, Loader2, MapPin, RotateCcw, ChevronDown, Search }
 import { getMapPinsInBounds, getClassificationTaxonomy, type TaxonomyTree, type MapPin as MapPinData } from '@/lib/queries/businesses';
 import { addToCrm } from '@/lib/queries/crm-actions';
 import { supabase } from '@/integrations/supabase/client';
-import { StageBadge, ReviewBadge } from '@/components/StatusBadge';
+import { StageBadge } from '@/components/StatusBadge';
+import ReviewStatusDropdown from '@/components/ReviewStatusDropdown';
 import BusinessRecordPanel from '@/components/BusinessRecordPanel';
 import type { CrmStage, ReviewStatus } from '@/types/acquira';
 
