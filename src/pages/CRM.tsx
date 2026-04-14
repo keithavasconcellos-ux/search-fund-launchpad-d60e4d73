@@ -218,6 +218,11 @@ export default function CRM() {
           )}
         </div>
       )}
+
+      <BusinessRecordPanel
+        businessId={selectedBusinessId}
+        onClose={() => setSelectedBusinessId(null)}
+      />
     </div>
   );
 }
