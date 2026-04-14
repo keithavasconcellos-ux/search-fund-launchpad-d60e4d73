@@ -177,6 +177,7 @@ export type Database = {
           name: string
           phone: string | null
           place_id: string | null
+          primary_email: string | null
           rating: number | null
           revenue_confidence: string | null
           revenue_est_high: number | null
@@ -221,6 +222,7 @@ export type Database = {
           name: string
           phone?: string | null
           place_id?: string | null
+          primary_email?: string | null
           rating?: number | null
           revenue_confidence?: string | null
           revenue_est_high?: number | null
@@ -265,6 +267,7 @@ export type Database = {
           name?: string
           phone?: string | null
           place_id?: string | null
+          primary_email?: string | null
           rating?: number | null
           revenue_confidence?: string | null
           revenue_est_high?: number | null
