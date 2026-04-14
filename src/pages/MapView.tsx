@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { GoogleMap, useJsApiLoader, OverlayView } from '@react-google-maps/api';
 import { SlidersHorizontal, X, Loader2, MapPin, RotateCcw, ChevronDown, Search } from 'lucide-react';
-import { getMapPinsInBounds, getClassificationTaxonomy, type TaxonomyTree } from '@/lib/queries/businesses';
+import { getMapPinsInBounds, getClassificationTaxonomy, type TaxonomyTree, type MapPin as MapPinData } from '@/lib/queries/businesses';
 import { addToCrm } from '@/lib/queries/crm-actions';
 import { supabase } from '@/integrations/supabase/client';
 import { StageBadge, ReviewBadge } from '@/components/StatusBadge';

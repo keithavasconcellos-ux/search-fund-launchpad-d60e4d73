@@ -70,40 +70,76 @@ export type Database = {
       }
       business_classifications: {
         Row: {
+          business_description: string | null
           business_id: string
           business_type: string | null
           category: string | null
+          classification_confidence: string | null
           classified_at: string
           classified_by: string | null
+          contact_info: string | null
+          customer_type: string | null
+          extraction_status: string | null
           gbp_confidence: string | null
+          geographic_scope: string | null
           id: string
+          industry_keywords: string | null
+          match_method: string | null
+          match_signals: string | null
           match_status: string | null
+          primary_gbp_category: string | null
+          services_offered: string | null
           sf_score: number | null
           vertical: string | null
+          years_in_business: string | null
         }
         Insert: {
+          business_description?: string | null
           business_id: string
           business_type?: string | null
           category?: string | null
+          classification_confidence?: string | null
           classified_at?: string
           classified_by?: string | null
+          contact_info?: string | null
+          customer_type?: string | null
+          extraction_status?: string | null
           gbp_confidence?: string | null
+          geographic_scope?: string | null
           id?: string
+          industry_keywords?: string | null
+          match_method?: string | null
+          match_signals?: string | null
           match_status?: string | null
+          primary_gbp_category?: string | null
+          services_offered?: string | null
           sf_score?: number | null
           vertical?: string | null
+          years_in_business?: string | null
         }
         Update: {
+          business_description?: string | null
           business_id?: string
           business_type?: string | null
           category?: string | null
+          classification_confidence?: string | null
           classified_at?: string
           classified_by?: string | null
+          contact_info?: string | null
+          customer_type?: string | null
+          extraction_status?: string | null
           gbp_confidence?: string | null
+          geographic_scope?: string | null
           id?: string
+          industry_keywords?: string | null
+          match_method?: string | null
+          match_signals?: string | null
           match_status?: string | null
+          primary_gbp_category?: string | null
+          services_offered?: string | null
           sf_score?: number | null
           vertical?: string | null
+          years_in_business?: string | null
         }
         Relationships: [
           {
@@ -121,6 +157,8 @@ export type Database = {
           address: string | null
           cim_uploaded_at: string | null
           cim_url: string | null
+          country: string | null
+          county: string | null
           created_at: string
           crm_stage: string
           deal_confidence_score: number | null
@@ -129,8 +167,10 @@ export type Database = {
           employee_count: number | null
           employee_count_source: string | null
           founded_year: number | null
+          geocode_status: string | null
           google_types: string[] | null
           id: string
+          in_crm: boolean
           last_activity_at: string | null
           lat: number | null
           lng: number | null
@@ -149,6 +189,8 @@ export type Database = {
           review_count: number | null
           review_status: string
           review_status_set_at: string | null
+          state: string | null
+          state_abbr: string | null
           updated_at: string
           website: string | null
           website_score: number | null
@@ -159,6 +201,8 @@ export type Database = {
           address?: string | null
           cim_uploaded_at?: string | null
           cim_url?: string | null
+          country?: string | null
+          county?: string | null
           created_at?: string
           crm_stage?: string
           deal_confidence_score?: number | null
@@ -167,8 +211,10 @@ export type Database = {
           employee_count?: number | null
           employee_count_source?: string | null
           founded_year?: number | null
+          geocode_status?: string | null
           google_types?: string[] | null
           id?: string
+          in_crm?: boolean
           last_activity_at?: string | null
           lat?: number | null
           lng?: number | null
@@ -187,6 +233,8 @@ export type Database = {
           review_count?: number | null
           review_status?: string
           review_status_set_at?: string | null
+          state?: string | null
+          state_abbr?: string | null
           updated_at?: string
           website?: string | null
           website_score?: number | null
@@ -197,6 +245,8 @@ export type Database = {
           address?: string | null
           cim_uploaded_at?: string | null
           cim_url?: string | null
+          country?: string | null
+          county?: string | null
           created_at?: string
           crm_stage?: string
           deal_confidence_score?: number | null
@@ -205,8 +255,10 @@ export type Database = {
           employee_count?: number | null
           employee_count_source?: string | null
           founded_year?: number | null
+          geocode_status?: string | null
           google_types?: string[] | null
           id?: string
+          in_crm?: boolean
           last_activity_at?: string | null
           lat?: number | null
           lng?: number | null
@@ -225,6 +277,8 @@ export type Database = {
           review_count?: number | null
           review_status?: string
           review_status_set_at?: string | null
+          state?: string | null
+          state_abbr?: string | null
           updated_at?: string
           website?: string | null
           website_score?: number | null

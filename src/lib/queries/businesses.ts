@@ -108,20 +108,44 @@ export async function addNote(
 // Viewport-based fetch — only loads pins inside the current map bounds.
 // Called on every map idle event (after pan/zoom stops) like Airbnb.
 // When classification filters are active, uses !inner join to restrict.
+export type TaxonomyTree = Record<string, Record<string, string[]>>
+
+export interface MapPin {
+  id: string
+  name: string
+  address: string | null
+  lat: number | null
+  lng: number | null
+  state_abbr: string | null
+  county: string | null
+  crm_stage: string
+  review_status: string
+  website: string | null
+  in_crm: boolean
+  classification: Array<{
+    vertical: string | null
+    category: string | null
+    business_type: string | null
+    gbp_confidence: string | null
+    primary_gbp_category: string | null
+  }> | null
+}
+
 export async function getMapPinsInBounds(
   bounds: { north: number; south: number; east: number; west: number },
   filters?: {
     review_status?: ReviewStatus
     crm_stage?: CrmStage
     state_abbr?: string
+    county?: string
     vertical?: string
     category?: string
     business_type?: string
-    primary_gbp_category?: string   // L4
+    primary_gbp_category?: string
+    in_crm?: boolean
   },
   limit = 500
-) {
-  // Use !inner join when classification filters active so PostgREST filters work on joined table
+): Promise<MapPin[]> {
   const hasClsFilter = !!(filters?.vertical || filters?.category || filters?.business_type || filters?.primary_gbp_category)
   const clsJoin = hasClsFilter ? 'business_classifications!inner' : 'business_classifications'
 
@@ -138,10 +162,13 @@ export async function getMapPinsInBounds(
       crm_stage,
       review_status,
       website,
+      in_crm,
       classification:${clsJoin}(
         vertical, category, business_type, gbp_confidence, primary_gbp_category
       )
-    `)
+    `) as any
+
+  query = query
     .not('lat', 'is', null)
     .not('lng', 'is', null)
     .gte('lat', bounds.south)
@@ -153,8 +180,9 @@ export async function getMapPinsInBounds(
   if (filters?.review_status) query = query.eq('review_status', filters.review_status)
   if (filters?.crm_stage)     query = query.eq('crm_stage', filters.crm_stage)
   if (filters?.state_abbr)    query = query.eq('state_abbr', filters.state_abbr)
+  if (filters?.county)        query = query.eq('county', filters.county)
+  if (filters?.in_crm !== undefined) query = query.eq('in_crm', filters.in_crm)
 
-  // Classification filters applied on the joined table
   if (filters?.vertical)              query = query.eq('business_classifications.vertical', filters.vertical)
   if (filters?.category)              query = query.eq('business_classifications.category', filters.category)
   if (filters?.business_type)         query = query.eq('business_classifications.business_type', filters.business_type)
@@ -162,7 +190,7 @@ export async function getMapPinsInBounds(
 
   const { data, error } = await query
   if (error) throw error
-  return data ?? []
+  return (data ?? []) as MapPin[]
 }
 
 // Fetch distinct L1→L2→L3 taxonomy from the DB for the drill-down filter UI.
