@@ -154,7 +154,7 @@ export default function CRM() {
                 </tr>
               </thead>
               <tbody>
-                {crmBusinesses.filter(b => b.crm_stage && b.crm_stage !== 'passed').map((b) => {
+                {businesses.filter(b => b.crm_stage && b.crm_stage !== 'passed').map((b) => {
                   const cls = Array.isArray(b.classification) ? b.classification[0] : b.classification;
                   return (
                     <tr key={b.id} className="border-b border-border/50 hover:bg-background-secondary/50 cursor-pointer transition-colors">
@@ -193,7 +193,7 @@ export default function CRM() {
             </div>
           ) : (
             <div className="space-y-4">
-              {crmBusinesses
+              {businesses
                 .filter(b => b.last_activity_at)
                 .sort((a, b) => new Date(b.last_activity_at!).getTime() - new Date(a.last_activity_at!).getTime())
                 .map((b) => (
