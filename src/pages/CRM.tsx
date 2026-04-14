@@ -41,11 +41,8 @@ export default function CRM() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['businesses'] }),
   });
 
-  // Only show businesses that are in CRM
-  const crmBusinesses = businesses.filter((b) => b.in_crm);
-
   const businessesByStage = (stage: CrmStage) =>
-    crmBusinesses.filter((b) => b.crm_stage === stage);
+    businesses.filter((b) => b.crm_stage === stage);
 
   // Active stages matching the DB (exclude 'passed' from kanban view)
   const kanbanStages: CrmStage[] = ['identified', 'contacted', 'engaged', 'nda_signed', 'cim_received', 'active_loi'];
