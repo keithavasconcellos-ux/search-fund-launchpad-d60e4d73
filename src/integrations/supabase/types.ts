@@ -451,6 +451,36 @@ export type Database = {
           },
         ]
       }
+      email_sequences: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          steps: Json
+          target_vertical: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          steps?: Json
+          target_vertical?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          steps?: Json
+          target_vertical?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           body_template: string
@@ -502,6 +532,8 @@ export type Database = {
           replied_at: string | null
           reply_body: string | null
           response_classification: string | null
+          scheduled_at: string | null
+          sending_provider: string | null
           sent_at: string | null
           status: string
           subject: string
@@ -522,6 +554,8 @@ export type Database = {
           replied_at?: string | null
           reply_body?: string | null
           response_classification?: string | null
+          scheduled_at?: string | null
+          sending_provider?: string | null
           sent_at?: string | null
           status?: string
           subject: string
@@ -542,6 +576,8 @@ export type Database = {
           replied_at?: string | null
           reply_body?: string | null
           response_classification?: string | null
+          scheduled_at?: string | null
+          sending_provider?: string | null
           sent_at?: string | null
           status?: string
           subject?: string
@@ -619,6 +655,60 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      scheduled_calls: {
+        Row: {
+          business_id: string
+          contact_id: string
+          created_at: string
+          duration_mins: number
+          external_event_id: string | null
+          id: string
+          notes: string | null
+          provider: string
+          scheduled_at: string
+          status: string
+        }
+        Insert: {
+          business_id: string
+          contact_id: string
+          created_at?: string
+          duration_mins?: number
+          external_event_id?: string | null
+          id?: string
+          notes?: string | null
+          provider?: string
+          scheduled_at: string
+          status?: string
+        }
+        Update: {
+          business_id?: string
+          contact_id?: string
+          created_at?: string
+          duration_mins?: number
+          external_event_id?: string | null
+          id?: string
+          notes?: string | null
+          provider?: string
+          scheduled_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_calls_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_calls_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_settings: {
         Row: {

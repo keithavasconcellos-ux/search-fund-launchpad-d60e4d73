@@ -1,9 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { ArrowUp, Mail, MessageSquare, FileText, RefreshCw } from 'lucide-react';
+import { ArrowUp, Mail, MessageSquare, FileText, RefreshCw, Phone } from 'lucide-react';
 import { getDashboardKpis, getPipelineFunnelCounts, getNeedsAttention } from '@/lib/queries/dashboard';
 import { StageBadge } from '@/components/StatusBadge';
 import { CRM_STAGE_LABELS } from '@/types/acquira';
 import type { CrmStage } from '@/types/acquira';
+import { calendarService } from '@/lib/calendar/calendarService';
+import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 const FUNNEL_STAGES: CrmStage[] = ['identified', 'contacted', 'engaged', 'nda_signed', 'cim_received', 'active_loi'];
 
@@ -23,6 +26,14 @@ export default function Dashboard() {
   const { data: needsAttention = [], isLoading: attentionLoading } = useQuery({
     queryKey: ['needs-attention'],
     queryFn: getNeedsAttention,
+    refetchInterval: 60_000,
+  });
+
+  const navigate = useNavigate();
+
+  const { data: upcomingCalls = [] } = useQuery({
+    queryKey: ['upcoming-calls'],
+    queryFn: () => calendarService.getUpcomingEvents(3),
     refetchInterval: 60_000,
   });
 
@@ -194,6 +205,40 @@ export default function Dashboard() {
           </table>
         )}
       </div>
+
+      {/* Upcoming Calls */}
+      {upcomingCalls.length > 0 && (
+        <div className="bg-card rounded-xl border border-border p-5 mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              Upcoming Calls
+            </h2>
+            <button
+              onClick={() => navigate('/email-hub')}
+              className="text-xs text-primary hover:text-primary/80"
+            >
+              View Schedule →
+            </button>
+          </div>
+          <div className="space-y-2">
+            {upcomingCalls.map((call) => (
+              <div
+                key={call.id}
+                className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/10 rounded px-2 -mx-2"
+                onClick={() => navigate('/email-hub')}
+              >
+                <Phone className="w-4 h-4 text-primary" />
+                <div className="flex-1">
+                  <div className="text-sm text-foreground">Call</div>
+                </div>
+                <span className="font-mono text-xs text-muted-foreground">
+                  {format(new Date(call.scheduledAt), 'EEE d MMM · HH:mm')}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
