@@ -50,6 +50,31 @@ export default function CRM() {
   // Active stages matching the DB (exclude 'passed' from kanban view)
   const kanbanStages: CrmStage[] = ['identified', 'contacted', 'engaged', 'nda_signed', 'cim_received', 'active_loi'];
 
+  const handleDragEnd = (result: DropResult) => {
+    const { draggableId, source, destination } = result;
+    if (!destination || destination.droppableId === source.droppableId) return;
+
+    const fromStage = source.droppableId as CrmStage;
+    const toStage = destination.droppableId as CrmStage;
+
+    // Optimistic update
+    queryClient.setQueryData(['businesses', 'crm'], (old: any[]) =>
+      old?.map((b) => (b.id === draggableId ? { ...b, crm_stage: toStage } : b))
+    );
+
+    stageMutation.mutate(
+      { id: draggableId, from: fromStage, to: toStage },
+      {
+        onError: () => {
+          // Revert on failure
+          queryClient.setQueryData(['businesses', 'crm'], (old: any[]) =>
+            old?.map((b) => (b.id === draggableId ? { ...b, crm_stage: fromStage } : b))
+          );
+        },
+      }
+    );
+  };
+
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
