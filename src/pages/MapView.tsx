@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, OverlayView } from '@react-google-maps/api';
-import { SlidersHorizontal, X, Loader2, MapPin, ChevronRight, ChevronDown, RotateCcw } from 'lucide-react';
+import { SlidersHorizontal, X, Loader2, MapPin, ChevronRight, ChevronDown, RotateCcw, Search } from 'lucide-react';
 import { getMapPinsInBounds } from '@/lib/queries/businesses';
 import { CLASSIFICATION_HIERARCHY, getPrimaryGbpCategories } from '@/lib/classificationHierarchy';
 import { StageBadge, ReviewBadge } from '@/components/StatusBadge';
@@ -10,6 +10,9 @@ import type { CrmStage, ReviewStatus } from '@/types/acquira';
 const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string;
 const NE_CENTER = { lat: 42.15, lng: -71.8 };
 const DEFAULT_ZOOM = 9;
+
+// Must be stable (outside component) to avoid @react-google-maps/api re-load warnings
+const LIBRARIES: ('places')[] = ['places'];
 
 const MAP_STYLES: google.maps.MapTypeStyle[] = [
   { elementType: 'geometry',                          stylers: [{ color: '#0f1629' }] },
@@ -54,6 +57,134 @@ const LEVEL_CONFIG = [
   { label: 'Business Type',      num: '3', color: 'teal',     bg: 'bg-teal-500/10',    border: 'border-teal-500/20',    text: 'text-teal-400'    },
   { label: 'Primary GBP Cat.',   num: '4', color: 'violet',   bg: 'bg-violet-500/10',  border: 'border-violet-500/20',  text: 'text-violet-400'  },
 ] as const;
+
+// ─── TownSearch Component ────────────────────────────────────────────────────
+interface TownSearchProps {
+  mapRef: React.RefObject<google.maps.Map | null>;
+}
+
+function TownSearch({ mapRef }: TownSearchProps) {
+  const [query, setQuery] = useState<string>('');
+  const [suggestions, setSuggestions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeTown, setActiveTown] = useState<string>('');
+  const serviceRef = useRef<google.maps.places.AutocompleteService | null>(null);
+  const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Init services once Google Maps SDK is available
+  useEffect(() => {
+    if (window.google?.maps?.places) {
+      serviceRef.current = new google.maps.places.AutocompleteService();
+      geocoderRef.current = new google.maps.Geocoder();
+    }
+  }, []);
+
+  const fetchSuggestions = useCallback((value: string) => {
+    if (!serviceRef.current || value.length < 2) {
+      setSuggestions([]);
+      setIsOpen(false);
+      return;
+    }
+    serviceRef.current.getPlacePredictions(
+      { input: value, types: ['(cities)'], componentRestrictions: { country: 'us' } },
+      (predictions, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+          setSuggestions(predictions);
+          setIsOpen(true);
+        } else {
+          setSuggestions([]);
+          setIsOpen(false);
+        }
+      }
+    );
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setQuery(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!val) { setSuggestions([]); setIsOpen(false); return; }
+    debounceRef.current = setTimeout(() => fetchSuggestions(val), 280);
+  };
+
+  const handleSelect = (prediction: google.maps.places.AutocompletePrediction) => {
+    const mainText = prediction.structured_formatting.main_text;
+    const secondText = prediction.structured_formatting.secondary_text ?? '';
+    setQuery(mainText);
+    setActiveTown(secondText ? `${mainText}, ${secondText}` : mainText);
+    setSuggestions([]);
+    setIsOpen(false);
+    // Geocode by place_id for accuracy, then pan + zoom
+    geocoderRef.current?.geocode({ placeId: prediction.place_id }, (results, status) => {
+      if (status === 'OK' && results?.[0] && mapRef.current) {
+        mapRef.current.panTo(results[0].geometry.location);
+        mapRef.current.setZoom(12);
+      }
+    });
+  };
+
+  const handleClear = () => {
+    setQuery('');
+    setActiveTown('');
+    setSuggestions([]);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      {/* Input */}
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary pointer-events-none" />
+        <input
+          type="text"
+          value={query}
+          onChange={handleChange}
+          onFocus={() => { if (suggestions.length > 0) setIsOpen(true); }}
+          onBlur={() => setTimeout(() => setIsOpen(false), 160)}
+          placeholder="Search town or city…"
+          className="w-full pl-8 pr-7 py-2 rounded-lg bg-background-tertiary border border-border text-xs font-mono text-foreground placeholder:text-text-tertiary focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+        />
+        {query && (
+          <button
+            onMouseDown={handleClear}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-foreground transition-colors"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+
+      {/* Suggestions dropdown */}
+      {isOpen && suggestions.length > 0 && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 rounded-lg bg-card border border-border shadow-2xl overflow-hidden">
+          {suggestions.map((s) => (
+            <button
+              key={s.place_id}
+              onMouseDown={() => handleSelect(s)}
+              className="w-full text-left px-3 py-2 hover:bg-background-tertiary transition-colors border-b border-border/40 last:border-0"
+            >
+              <span className="text-xs font-mono text-foreground">{s.structured_formatting.main_text}</span>
+              {s.structured_formatting.secondary_text && (
+                <span className="text-[10px] font-mono text-text-tertiary ml-1.5">
+                  {s.structured_formatting.secondary_text}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Active town pill */}
+      {activeTown && (
+        <div className="mt-1.5 flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10 border border-primary/20">
+          <MapPin className="w-2.5 h-2.5 text-primary flex-shrink-0" />
+          <span className="font-mono text-[10px] text-primary truncate leading-none">{activeTown}</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── DrillDownFilter Component ────────────────────────────────────────────────
 interface DrillDownProps {
@@ -213,6 +344,7 @@ export default function MapView() {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_KEY ?? '',
     id: 'google-map-script',
+    libraries: LIBRARIES,
   });
 
   // ── Fetch pins for current viewport ──────────────────────────────────────
@@ -286,6 +418,12 @@ export default function MapView() {
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+
+            {/* ── Town Search ──────────────────────────────────────────────── */}
+            <div className="border-b border-border pb-4">
+              <span className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider block mb-2">Location Search</span>
+              <TownSearch mapRef={mapRef} />
+            </div>
 
             {/* Viewport stat */}
             <div className="bg-background-tertiary rounded-lg p-3">
