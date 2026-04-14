@@ -1,23 +1,27 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Mail, StickyNote, MoreHorizontal, Star, ExternalLink } from 'lucide-react';
+import { X, Star, ExternalLink, Plus, Upload, Download, Pencil, Check, Trash2 } from 'lucide-react';
 import { getBusinessById } from '@/lib/queries/businesses';
-import { addToCrm } from '@/lib/queries/crm-actions';
+import { addToCrm, removeFromCrm } from '@/lib/queries/crm-actions';
+import { addNote } from '@/lib/queries/businesses';
 import { StageBadge } from '@/components/StatusBadge';
 import ReviewStatusDropdown from '@/components/ReviewStatusDropdown';
 import { formatRevenue } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import type { CrmStage, ReviewStatus } from '@/types/acquira';
 
-type Tab = 'overview' | 'contacts' | 'emails' | 'notes' | 'docs' | 'cim';
+type Tab = 'overview' | 'contacts' | 'notes' | 'docs' | 'cim';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'contacts', label: 'Contacts' },
-  { key: 'emails', label: 'Emails' },
   { key: 'notes', label: 'Notes' },
   { key: 'docs', label: 'Docs' },
   { key: 'cim', label: 'CIM' },
 ];
+
+const CONFIDENCE_OPTIONS = ['High', 'Medium', 'Low', 'Unknown'];
 
 interface Props {
   businessId: string | null;
@@ -34,12 +38,20 @@ export default function BusinessRecordPanel({ businessId, onClose }: Props) {
     enabled: !!businessId,
   });
 
-  const crmMutation = useMutation({
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['business', businessId] });
+    queryClient.invalidateQueries({ queryKey: ['businesses'] });
+    queryClient.invalidateQueries({ queryKey: ['crm-businesses'] });
+  };
+
+  const crmAddMutation = useMutation({
     mutationFn: (id: string) => addToCrm(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['business', businessId] });
-      queryClient.invalidateQueries({ queryKey: ['businesses'] });
-    },
+    onSuccess: invalidateAll,
+  });
+
+  const crmRemoveMutation = useMutation({
+    mutationFn: (id: string) => removeFromCrm(id),
+    onSuccess: invalidateAll,
   });
 
   if (!businessId) return null;
@@ -48,14 +60,9 @@ export default function BusinessRecordPanel({ businessId, onClose }: Props) {
     ? Array.isArray(biz.classification) ? biz.classification[0] : biz.classification
     : null;
 
-  const currentYear = new Date().getFullYear();
-
   return (
     <>
-      {/* Backdrop */}
       <div className="fixed inset-0 z-[9998] bg-black/50" onClick={onClose} />
-
-      {/* Slide-over panel */}
       <div className="fixed right-0 top-0 bottom-0 z-[9999] w-full max-w-md bg-background-secondary border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
@@ -73,15 +80,11 @@ export default function BusinessRecordPanel({ businessId, onClose }: Props) {
                 <h2 className="font-display text-xl text-foreground italic leading-tight pr-4">
                   {biz.name}
                 </h2>
-                <button
-                  onClick={onClose}
-                  className="text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5"
-                >
+                <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Badges row */}
               <div className="flex items-center gap-2 flex-wrap mb-4">
                 {cls?.business_type && (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-mono font-medium bg-primary/20 text-primary">
@@ -99,32 +102,25 @@ export default function BusinessRecordPanel({ businessId, onClose }: Props) {
                 )}
               </div>
 
-              {/* Action buttons */}
+              {/* CRM toggle */}
               <div className="flex items-center gap-2">
-                <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-background-tertiary transition-colors">
-                  <Mail className="w-3.5 h-3.5" />
-                  Send Email
-                </button>
-                <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-background-tertiary transition-colors">
-                  <StickyNote className="w-3.5 h-3.5" />
-                  Add Note
-                </button>
-                {!biz.in_crm ? (
+                {biz.in_crm ? (
                   <button
-                    onClick={() => crmMutation.mutate(biz.id)}
-                    disabled={crmMutation.isPending}
-                    className="px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                    onClick={() => crmRemoveMutation.mutate(biz.id)}
+                    disabled={crmRemoveMutation.isPending}
+                    className="flex-1 px-3 py-2 rounded-lg bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors"
                   >
-                    {crmMutation.isPending ? '…' : '+ CRM'}
+                    {crmRemoveMutation.isPending ? '…' : 'Remove from CRM'}
                   </button>
                 ) : (
-                  <span className="px-3 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium">
-                    ✓ In CRM
-                  </span>
+                  <button
+                    onClick={() => crmAddMutation.mutate(biz.id)}
+                    disabled={crmAddMutation.isPending}
+                    className="flex-1 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    {crmAddMutation.isPending ? '…' : '+ Add to CRM'}
+                  </button>
                 )}
-                <button className="p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-background-tertiary transition-colors">
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
               </div>
             </div>
 
@@ -149,200 +145,11 @@ export default function BusinessRecordPanel({ businessId, onClose }: Props) {
 
             {/* Tab content */}
             <div className="flex-1 overflow-y-auto">
-              {activeTab === 'overview' && (
-                <div className="divide-y divide-border">
-                  <DetailRow label="Address" value={biz.address} />
-                  <DetailRow label="Phone" value={biz.phone} />
-                  <DetailRow
-                    label="Website"
-                    value={
-                      biz.website ? (
-                        <a
-                          href={biz.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:text-primary/80 transition-colors inline-flex items-center gap-1"
-                        >
-                          {biz.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      ) : null
-                    }
-                  />
-                  <DetailRow
-                    label="Est. Revenue"
-                    value={
-                      biz.revenue_est_low && biz.revenue_est_high
-                        ? `${formatRevenue(biz.revenue_est_low)} – ${formatRevenue(biz.revenue_est_high)}`
-                        : null
-                    }
-                  />
-                  <DetailRow
-                    label="Founded"
-                    value={
-                      biz.founded_year
-                        ? `~${biz.founded_year} (est. ${currentYear - biz.founded_year}+ yrs)`
-                        : null
-                    }
-                  />
-                  <DetailRow
-                    label="Employees"
-                    value={
-                      biz.employee_count
-                        ? `~${biz.employee_count}${biz.employee_count_source ? ` (${biz.employee_count_source})` : ''}`
-                        : null
-                    }
-                  />
-                  {/* Owner from contacts */}
-                  {(() => {
-                    const owner = biz.contacts?.find((c: any) => c.is_owner);
-                    return owner ? (
-                      <DetailRow label="Owner" value={`${owner.name}${owner.role ? ` (${owner.role})` : ''}`} />
-                    ) : null;
-                  })()}
-                  <DetailRow
-                    label="Rating"
-                    value={
-                      biz.rating != null
-                        ? `${biz.rating} (${biz.review_count ?? 0} reviews)`
-                        : null
-                    }
-                  />
-                  <DetailRow
-                    label="Classification"
-                    value={
-                      cls
-                        ? [cls.vertical, cls.category, cls.business_type].filter(Boolean).join(' › ')
-                        : null
-                    }
-                  />
-                  <DetailRow
-                    label="Confidence"
-                    value={cls?.gbp_confidence ?? null}
-                  />
-                </div>
-              )}
-
-              {activeTab === 'contacts' && (
-                <div className="p-6">
-                  {biz.contacts && biz.contacts.length > 0 ? (
-                    <div className="space-y-3">
-                      {biz.contacts.map((c: any) => (
-                        <div key={c.id} className="rounded-lg bg-background-tertiary p-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium text-foreground">{c.name}</span>
-                            {c.is_owner && (
-                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/20 text-primary">Owner</span>
-                            )}
-                          </div>
-                          {c.role && <div className="text-xs text-muted-foreground">{c.role}</div>}
-                          {c.email && <div className="text-xs text-muted-foreground mt-1">{c.email}</div>}
-                          {c.phone && <div className="text-xs text-muted-foreground">{c.phone}</div>}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState text="No contacts yet" />
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'emails' && (
-                <div className="p-6">
-                  {biz.email_threads && biz.email_threads.length > 0 ? (
-                    <div className="space-y-3">
-                      {biz.email_threads.map((e: any) => (
-                        <div key={e.id} className="rounded-lg bg-background-tertiary p-3">
-                          <div className="text-sm font-medium text-foreground mb-1">{e.subject}</div>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                              e.status === 'replied' ? 'bg-success/20 text-success' :
-                              e.status === 'opened' ? 'bg-warning/20 text-warning' :
-                              e.status === 'sent' ? 'bg-primary/20 text-primary' :
-                              'bg-muted text-muted-foreground'
-                            }`}>{e.status}</span>
-                            {e.sent_at && (
-                              <span className="text-[11px] font-mono text-text-tertiary">
-                                {new Date(e.sent_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState text="No emails yet" />
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'notes' && (
-                <div className="p-6">
-                  {(() => {
-                    const notes = biz.activities?.filter((a: any) => a.type === 'note') ?? [];
-                    return notes.length > 0 ? (
-                      <div className="space-y-3">
-                        {notes.map((n: any) => (
-                          <div key={n.id} className="rounded-lg bg-background-tertiary p-3">
-                            <div className="text-sm text-foreground whitespace-pre-wrap">{n.body}</div>
-                            <div className="text-[11px] font-mono text-text-tertiary mt-2">
-                              {new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <EmptyState text="No notes yet" />
-                    );
-                  })()}
-                </div>
-              )}
-
-              {activeTab === 'docs' && (
-                <div className="p-6">
-                  {biz.dd_documents && biz.dd_documents.length > 0 ? (
-                    <div className="space-y-3">
-                      {biz.dd_documents.map((d: any) => (
-                        <div key={d.id} className="rounded-lg bg-background-tertiary p-3 flex items-center justify-between">
-                          <div>
-                            <div className="text-sm font-medium text-foreground">{d.file_name}</div>
-                            <div className="text-[11px] font-mono text-text-tertiary">
-                              {d.doc_type} · {d.file_size_kb ? `${d.file_size_kb}KB` : ''}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState text="No documents yet" />
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'cim' && (
-                <div className="p-6">
-                  {biz.cim_url ? (
-                    <div className="rounded-lg bg-background-tertiary p-4">
-                      <div className="text-sm font-medium text-foreground mb-2">CIM Document</div>
-                      <a
-                        href={biz.cim_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary text-sm hover:text-primary/80 inline-flex items-center gap-1"
-                      >
-                        View CIM <ExternalLink className="w-3 h-3" />
-                      </a>
-                      {biz.cim_uploaded_at && (
-                        <div className="text-[11px] font-mono text-text-tertiary mt-1">
-                          Uploaded {new Date(biz.cim_uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <EmptyState text="No CIM uploaded yet" />
-                  )}
-                </div>
-              )}
+              {activeTab === 'overview' && <OverviewTab biz={biz} cls={cls} onUpdate={invalidateAll} />}
+              {activeTab === 'contacts' && <ContactsTab biz={biz} onUpdate={invalidateAll} />}
+              {activeTab === 'notes' && <NotesTab biz={biz} onUpdate={invalidateAll} />}
+              {activeTab === 'docs' && <DocsTab biz={biz} onUpdate={invalidateAll} />}
+              {activeTab === 'cim' && <CimTab biz={biz} onUpdate={invalidateAll} />}
             </div>
           </>
         )}
@@ -351,6 +158,501 @@ export default function BusinessRecordPanel({ businessId, onClose }: Props) {
   );
 }
 
+/* ─── Overview Tab ─── */
+function OverviewTab({ biz, cls, onUpdate }: { biz: any; cls: any; onUpdate: () => void }) {
+  const currentYear = new Date().getFullYear();
+
+  return (
+    <div className="divide-y divide-border">
+      <DetailRow label="Address" value={biz.address} />
+      <EditableRow label="Phone" field="phone" businessId={biz.id} currentValue={biz.phone} onUpdate={onUpdate} />
+      <EditableRow label="Primary Email" field="primary_email" businessId={biz.id} currentValue={(biz as any).primary_email} onUpdate={onUpdate} />
+      <DetailRow
+        label="Website"
+        value={
+          biz.website ? (
+            <a href={biz.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 transition-colors inline-flex items-center gap-1">
+              {biz.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          ) : null
+        }
+      />
+      <EditableRow label="Est. Revenue" field="revenue_est_low" businessId={biz.id}
+        currentValue={biz.revenue_est_low && biz.revenue_est_high ? `${biz.revenue_est_low}-${biz.revenue_est_high}` : ''}
+        displayValue={biz.revenue_est_low && biz.revenue_est_high ? `${formatRevenue(biz.revenue_est_low)} – ${formatRevenue(biz.revenue_est_high)}` : null}
+        onSave={async (val) => {
+          const parts = val.split('-').map(s => parseInt(s.replace(/[^0-9]/g, ''), 10));
+          if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+            const { error } = await supabase.from('businesses').update({ revenue_est_low: parts[0], revenue_est_high: parts[1] } as any).eq('id', biz.id);
+            if (error) throw error;
+          } else if (parts.length === 1 && !isNaN(parts[0])) {
+            const { error } = await supabase.from('businesses').update({ revenue_est_low: parts[0], revenue_est_high: parts[0] } as any).eq('id', biz.id);
+            if (error) throw error;
+          } else {
+            throw new Error('Format: low-high (e.g. 500000-1000000)');
+          }
+        }}
+        onUpdate={onUpdate}
+      />
+      <EditableRow label="Founded" field="founded_year" businessId={biz.id}
+        currentValue={biz.founded_year?.toString() ?? ''}
+        displayValue={biz.founded_year ? `~${biz.founded_year} (est. ${currentYear - biz.founded_year}+ yrs)` : null}
+        onUpdate={onUpdate}
+        onSave={async (val) => {
+          const yr = parseInt(val, 10);
+          if (isNaN(yr)) throw new Error('Enter a valid year');
+          const { error } = await supabase.from('businesses').update({ founded_year: yr } as any).eq('id', biz.id);
+          if (error) throw error;
+        }}
+      />
+      <EditableRow label="Employees" field="employee_count" businessId={biz.id}
+        currentValue={biz.employee_count?.toString() ?? ''}
+        displayValue={biz.employee_count ? `~${biz.employee_count}${biz.employee_count_source ? ` (${biz.employee_count_source})` : ''}` : null}
+        onUpdate={onUpdate}
+        onSave={async (val) => {
+          const n = parseInt(val, 10);
+          if (isNaN(n)) throw new Error('Enter a number');
+          const { error } = await supabase.from('businesses').update({ employee_count: n } as any).eq('id', biz.id);
+          if (error) throw error;
+        }}
+      />
+      <ConfidenceRow businessId={biz.id} currentValue={cls?.gbp_confidence} classificationId={cls?.id} onUpdate={onUpdate} />
+      <DetailRow
+        label="Rating"
+        value={biz.rating != null ? `${biz.rating} (${biz.review_count ?? 0} reviews)` : null}
+      />
+      <DetailRow
+        label="Classification"
+        value={cls ? [cls.vertical, cls.category, cls.business_type].filter(Boolean).join(' › ') : null}
+      />
+    </div>
+  );
+}
+
+/* ─── Contacts Tab ─── */
+function ContactsTab({ biz, onUpdate }: { biz: any; onUpdate: () => void }) {
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ name: '', role: '', email: '', phone: '' });
+  const [saving, setSaving] = useState(false);
+
+  const handleAdd = async () => {
+    if (!form.name.trim()) { toast.error('Name is required'); return; }
+    setSaving(true);
+    try {
+      const { error } = await (supabase.from('contacts') as any).insert({
+        business_id: biz.id,
+        name: form.name.trim(),
+        role: form.role.trim() || null,
+        email: form.email.trim() || null,
+        phone: form.phone.trim() || null,
+      });
+      if (error) throw error;
+      toast.success('Contact added');
+      setForm({ name: '', role: '', email: '', phone: '' });
+      setShowForm(false);
+      onUpdate();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Merge contacts and email threads into contacts tab
+  const contacts = biz.contacts ?? [];
+  const emailThreads = biz.email_threads ?? [];
+
+  return (
+    <div className="p-6 space-y-4">
+      {/* Existing contacts */}
+      {contacts.length > 0 ? (
+        <div className="space-y-3">
+          {contacts.map((c: any) => (
+            <div key={c.id} className="rounded-lg bg-background-tertiary p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-medium text-foreground">{c.name}</span>
+                {c.is_owner && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/20 text-primary">Owner</span>
+                )}
+              </div>
+              {c.role && <div className="text-xs text-muted-foreground">{c.role}</div>}
+              {c.email && <div className="text-xs text-muted-foreground mt-1">{c.email}</div>}
+              {c.phone && <div className="text-xs text-muted-foreground">{c.phone}</div>}
+            </div>
+          ))}
+        </div>
+      ) : (
+        !showForm && <EmptyState text="No contacts yet" />
+      )}
+
+      {/* Email threads summary */}
+      {emailThreads.length > 0 && (
+        <div className="mt-4">
+          <h4 className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-2">Email History</h4>
+          <div className="space-y-2">
+            {emailThreads.map((e: any) => (
+              <div key={e.id} className="rounded-lg bg-background-tertiary p-3">
+                <div className="text-sm font-medium text-foreground mb-1">{e.subject}</div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                    e.status === 'replied' ? 'bg-success/20 text-success' :
+                    e.status === 'opened' ? 'bg-warning/20 text-warning' :
+                    e.status === 'sent' ? 'bg-primary/20 text-primary' :
+                    'bg-muted text-muted-foreground'
+                  }`}>{e.status}</span>
+                  {e.sent_at && (
+                    <span className="text-[11px] font-mono text-text-tertiary">
+                      {new Date(e.sent_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Add contact form */}
+      {showForm ? (
+        <div className="rounded-lg border border-border p-4 space-y-3">
+          <h4 className="text-sm font-medium text-foreground">New Contact</h4>
+          <input placeholder="Name *" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+            className="w-full px-3 py-2 rounded-md bg-background-tertiary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+          <input placeholder="Role" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+            className="w-full px-3 py-2 rounded-md bg-background-tertiary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+          <input placeholder="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+            className="w-full px-3 py-2 rounded-md bg-background-tertiary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+          <input placeholder="Phone" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+            className="w-full px-3 py-2 rounded-md bg-background-tertiary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+          <div className="flex gap-2">
+            <button onClick={handleAdd} disabled={saving}
+              className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+              {saving ? 'Saving…' : 'Add Contact'}
+            </button>
+            <button onClick={() => setShowForm(false)} className="px-4 py-2 rounded-md border border-border text-sm text-muted-foreground hover:text-foreground">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setShowForm(true)}
+          className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors">
+          <Plus className="w-4 h-4" /> Add Contact
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ─── Notes Tab ─── */
+function NotesTab({ biz, onUpdate }: { biz: any; onUpdate: () => void }) {
+  const [noteText, setNoteText] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!noteText.trim()) return;
+    setSaving(true);
+    try {
+      await addNote(biz.id, noteText.trim(), 'user');
+      toast.success('Note added');
+      setNoteText('');
+      onUpdate();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const notes = biz.activities?.filter((a: any) => a.type === 'note') ?? [];
+
+  return (
+    <div className="p-6 space-y-4">
+      {/* Add note */}
+      <div className="space-y-2">
+        <textarea
+          value={noteText}
+          onChange={e => setNoteText(e.target.value)}
+          placeholder="Add a note…"
+          rows={3}
+          className="w-full px-3 py-2 rounded-md bg-background-tertiary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+        />
+        <button onClick={handleSave} disabled={saving || !noteText.trim()}
+          className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+          {saving ? 'Saving…' : 'Save Note'}
+        </button>
+      </div>
+
+      {/* Existing notes */}
+      {notes.length > 0 ? (
+        <div className="space-y-3">
+          {notes.map((n: any) => (
+            <div key={n.id} className="rounded-lg bg-background-tertiary p-3">
+              <div className="text-sm text-foreground whitespace-pre-wrap">{n.body}</div>
+              <div className="text-[11px] font-mono text-text-tertiary mt-2">
+                {new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState text="No notes yet" />
+      )}
+    </div>
+  );
+}
+
+/* ─── Docs Tab ─── */
+function DocsTab({ biz, onUpdate }: { biz: any; onUpdate: () => void }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const storagePath = `${biz.id}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage.from('dd-documents').upload(storagePath, file);
+      if (uploadError) throw uploadError;
+
+      const { error: dbError } = await (supabase.from('dd_documents') as any).insert({
+        business_id: biz.id,
+        file_name: file.name,
+        file_type: file.type || 'application/octet-stream',
+        storage_path: storagePath,
+        doc_type: 'general',
+        file_size_kb: Math.round(file.size / 1024),
+      });
+      if (dbError) throw dbError;
+      toast.success('Document uploaded');
+      onUpdate();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDownload = async (doc: any) => {
+    try {
+      const { data, error } = await supabase.storage.from('dd-documents').download(doc.storage_path);
+      if (error) throw error;
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.file_name;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const docs = biz.dd_documents ?? [];
+
+  return (
+    <div className="p-6 space-y-4">
+      <input ref={fileInputRef} type="file" className="hidden" onChange={handleUpload} />
+      <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
+        className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors disabled:opacity-50">
+        <Upload className="w-4 h-4" /> {uploading ? 'Uploading…' : 'Upload Document'}
+      </button>
+
+      {docs.length > 0 ? (
+        <div className="space-y-3">
+          {docs.map((d: any) => (
+            <div key={d.id} className="rounded-lg bg-background-tertiary p-3 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-foreground">{d.file_name}</div>
+                <div className="text-[11px] font-mono text-text-tertiary">
+                  {d.doc_type} · {d.file_size_kb ? `${d.file_size_kb}KB` : ''}
+                </div>
+              </div>
+              <button onClick={() => handleDownload(d)} className="p-1.5 rounded hover:bg-background-secondary text-muted-foreground hover:text-foreground transition-colors">
+                <Download className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState text="No documents yet" />
+      )}
+    </div>
+  );
+}
+
+/* ─── CIM Tab ─── */
+function CimTab({ biz, onUpdate }: { biz: any; onUpdate: () => void }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const storagePath = `cim/${biz.id}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage.from('dd-documents').upload(storagePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('dd-documents').getPublicUrl(storagePath);
+
+      const { error: dbError } = await supabase
+        .from('businesses')
+        .update({
+          cim_url: urlData.publicUrl,
+          cim_uploaded_at: new Date().toISOString(),
+        } as any)
+        .eq('id', biz.id);
+      if (dbError) throw dbError;
+      toast.success('CIM uploaded');
+      onUpdate();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-4">
+      <input ref={fileInputRef} type="file" className="hidden" onChange={handleUpload} accept=".pdf,.doc,.docx,.xls,.xlsx" />
+
+      {biz.cim_url ? (
+        <div className="rounded-lg bg-background-tertiary p-4">
+          <div className="text-sm font-medium text-foreground mb-2">CIM Document</div>
+          <a href={biz.cim_url} target="_blank" rel="noopener noreferrer"
+            className="text-primary text-sm hover:text-primary/80 inline-flex items-center gap-1">
+            View CIM <ExternalLink className="w-3 h-3" />
+          </a>
+          {biz.cim_uploaded_at && (
+            <div className="text-[11px] font-mono text-text-tertiary mt-1">
+              Uploaded {new Date(biz.cim_uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </div>
+          )}
+          <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
+            className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <Upload className="w-3.5 h-3.5" /> {uploading ? 'Uploading…' : 'Replace CIM'}
+          </button>
+        </div>
+      ) : (
+        <div className="text-center py-12 space-y-3">
+          <span className="font-mono text-xs text-text-tertiary block">No CIM uploaded yet</span>
+          <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+            <Upload className="w-4 h-4" /> {uploading ? 'Uploading…' : 'Upload CIM'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Editable Row ─── */
+function EditableRow({
+  label, field, businessId, currentValue, displayValue, onUpdate, onSave,
+}: {
+  label: string;
+  field: string;
+  businessId: string;
+  currentValue: string | null | undefined;
+  displayValue?: React.ReactNode | string | null;
+  onUpdate: () => void;
+  onSave?: (val: string) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(currentValue ?? '');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      if (onSave) {
+        await onSave(value);
+      } else {
+        const { error } = await supabase.from('businesses').update({ [field]: value.trim() || null } as any).eq('id', businessId);
+        if (error) throw error;
+      }
+      setEditing(false);
+      onUpdate();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center px-6 py-2.5 gap-2">
+        <span className="w-32 shrink-0 font-mono text-xs text-muted-foreground">{label}</span>
+        <input
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          autoFocus
+          onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false); }}
+          className="flex-1 px-2 py-1 rounded bg-background-tertiary border border-border text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+        <button onClick={handleSave} disabled={saving} className="p-1 text-primary hover:text-primary/80"><Check className="w-4 h-4" /></button>
+        <button onClick={() => setEditing(false)} className="p-1 text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-start px-6 py-3.5 group">
+      <span className="w-32 shrink-0 font-mono text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm text-foreground flex-1">{displayValue ?? currentValue ?? '—'}</span>
+      <button onClick={() => { setValue(currentValue ?? ''); setEditing(true); }}
+        className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-opacity">
+        <Pencil className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
+/* ─── Confidence Dropdown Row ─── */
+function ConfidenceRow({ businessId, currentValue, classificationId, onUpdate }: {
+  businessId: string; currentValue: string | null; classificationId?: string; onUpdate: () => void;
+}) {
+  const [saving, setSaving] = useState(false);
+
+  const handleChange = async (val: string) => {
+    if (!classificationId) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('business_classifications').update({ gbp_confidence: val } as any).eq('id', classificationId);
+      if (error) throw error;
+      onUpdate();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center px-6 py-3.5">
+      <span className="w-32 shrink-0 font-mono text-xs text-muted-foreground">Confidence</span>
+      <select
+        value={currentValue ?? 'Unknown'}
+        onChange={e => handleChange(e.target.value)}
+        disabled={saving || !classificationId}
+        className="text-sm bg-background-tertiary border border-border rounded px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+      >
+        {CONFIDENCE_OPTIONS.map(opt => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+/* ─── Shared ─── */
 function DetailRow({ label, value }: { label: string; value: React.ReactNode | string | null }) {
   return (
     <div className="flex items-start px-6 py-3.5">
