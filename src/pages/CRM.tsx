@@ -17,8 +17,21 @@ export default function CRM() {
   const queryClient = useQueryClient();
 
   const { data: businesses = [], isLoading } = useQuery({
-    queryKey: ['businesses'],
-    queryFn: () => getBusinesses({ limit: 500 }),
+    queryKey: ['businesses', 'crm'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('businesses')
+        .select(`
+          *,
+          classification:business_classifications(
+            vertical, category, business_type, gbp_confidence, sf_score
+          )
+        `)
+        .eq('in_crm', true)
+        .order('last_activity_at', { ascending: false, nullsFirst: false });
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const stageMutation = useMutation({
