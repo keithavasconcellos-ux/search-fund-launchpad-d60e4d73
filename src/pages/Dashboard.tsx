@@ -205,6 +205,40 @@ export default function Dashboard() {
           </table>
         )}
       </div>
+
+      {/* Upcoming Calls */}
+      {upcomingCalls.length > 0 && (
+        <div className="bg-card rounded-xl border border-border p-5 mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              Upcoming Calls
+            </h2>
+            <button
+              onClick={() => navigate('/email-hub')}
+              className="text-xs text-primary hover:text-primary/80"
+            >
+              View Schedule →
+            </button>
+          </div>
+          <div className="space-y-2">
+            {upcomingCalls.map((call) => (
+              <div
+                key={call.id}
+                className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/10 rounded px-2 -mx-2"
+                onClick={() => navigate('/email-hub')}
+              >
+                <Phone className="w-4 h-4 text-primary" />
+                <div className="flex-1">
+                  <div className="text-sm text-foreground">Call</div>
+                </div>
+                <span className="font-mono text-xs text-muted-foreground">
+                  {format(new Date(call.scheduledAt), 'EEE d MMM · HH:mm')}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
