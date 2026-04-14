@@ -72,21 +72,22 @@ function TownSearch({ mapRef }: TownSearchProps) {
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Init services once Google Maps SDK is available
-  useEffect(() => {
-    if (window.google?.maps?.places) {
+  // Lazy-init services (SDK loads async via useJsApiLoader)
+  const ensureServices = useCallback(() => {
+    if (!serviceRef.current && window.google?.maps?.places) {
       serviceRef.current = new google.maps.places.AutocompleteService();
       geocoderRef.current = new google.maps.Geocoder();
     }
+    return !!serviceRef.current;
   }, []);
 
   const fetchSuggestions = useCallback((value: string) => {
-    if (!serviceRef.current || value.length < 2) {
+    if (!ensureServices() || value.length < 2) {
       setSuggestions([]);
       setIsOpen(false);
       return;
     }
-    serviceRef.current.getPlacePredictions(
+    serviceRef.current!.getPlacePredictions(
       { input: value, types: ['(cities)'], componentRestrictions: { country: 'us' } },
       (predictions, status) => {
         if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
@@ -98,7 +99,7 @@ function TownSearch({ mapRef }: TownSearchProps) {
         }
       }
     );
-  }, []);
+  }, [ensureServices]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
