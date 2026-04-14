@@ -772,8 +772,8 @@ export default function MapView() {
         )}
       </div>
 
-      {/* Profile Modal */}
-      <BusinessProfileModal
+      {/* Business Record Panel */}
+      <BusinessRecordPanel
         businessId={profileBusinessId}
         onClose={() => setProfileBusinessId(null)}
       />
