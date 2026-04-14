@@ -29,6 +29,14 @@ export default function Dashboard() {
     refetchInterval: 60_000,
   });
 
+  const navigate = useNavigate();
+
+  const { data: upcomingCalls = [] } = useQuery({
+    queryKey: ['upcoming-calls'],
+    queryFn: () => calendarService.getUpcomingEvents(3),
+    refetchInterval: 60_000,
+  });
+
   const maxFunnelCount = FUNNEL_STAGES.reduce((max, s) => Math.max(max, funnelCounts[s] ?? 0), 1);
 
   const kpiCards = kpis
