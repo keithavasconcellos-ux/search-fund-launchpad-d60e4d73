@@ -1,9 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { ArrowUp, Mail, MessageSquare, FileText, RefreshCw } from 'lucide-react';
+import { ArrowUp, Mail, MessageSquare, FileText, RefreshCw, Phone } from 'lucide-react';
 import { getDashboardKpis, getPipelineFunnelCounts, getNeedsAttention } from '@/lib/queries/dashboard';
 import { StageBadge } from '@/components/StatusBadge';
 import { CRM_STAGE_LABELS } from '@/types/acquira';
 import type { CrmStage } from '@/types/acquira';
+import { calendarService } from '@/lib/calendar/calendarService';
+import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 const FUNNEL_STAGES: CrmStage[] = ['identified', 'contacted', 'engaged', 'nda_signed', 'cim_received', 'active_loi'];
 
