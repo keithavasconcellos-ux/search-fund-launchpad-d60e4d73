@@ -179,6 +179,10 @@ export default function LibraryPage() {
           )}
         </div>
       )}
+      <BusinessRecordPanel
+        businessId={selectedBusinessId}
+        onClose={() => setSelectedBusinessId(null)}
+      />
     </div>
   );
 }
