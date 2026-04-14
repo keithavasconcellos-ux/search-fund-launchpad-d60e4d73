@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Plus, LayoutGrid, Table, Clock } from 'lucide-react';
-import { getBusinesses, updateCrmStage } from '@/lib/queries/businesses';
+import { updateCrmStage } from '@/lib/queries/businesses';
+import { supabase } from '@/integrations/supabase/client';
 import { StageBadge } from '@/components/StatusBadge';
 import { formatRevenue } from '@/lib/utils';
 import { CRM_STAGES, CRM_STAGE_LABELS } from '@/types/acquira';
