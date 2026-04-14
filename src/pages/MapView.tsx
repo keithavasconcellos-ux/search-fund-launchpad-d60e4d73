@@ -747,7 +747,7 @@ export default function MapView() {
               )}
 
               <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
-                {addedToCrm.has(selectedPin.id) ? (
+                {(selectedPin.in_crm || addedToCrm.has(selectedPin.id)) ? (
                   <div className="flex-1 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium text-center">
                     ✓ In CRM
                   </div>
