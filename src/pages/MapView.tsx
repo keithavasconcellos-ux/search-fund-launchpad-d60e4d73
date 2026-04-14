@@ -6,7 +6,7 @@ import { getMapPinsInBounds, getClassificationTaxonomy, type TaxonomyTree, type 
 import { addToCrm } from '@/lib/queries/crm-actions';
 import { supabase } from '@/integrations/supabase/client';
 import { StageBadge, ReviewBadge } from '@/components/StatusBadge';
-import BusinessProfileModal from '@/components/BusinessProfileModal';
+import BusinessRecordPanel from '@/components/BusinessRecordPanel';
 import type { CrmStage, ReviewStatus } from '@/types/acquira';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -772,8 +772,8 @@ export default function MapView() {
         )}
       </div>
 
-      {/* Profile Modal */}
-      <BusinessProfileModal
+      {/* Business Record Panel */}
+      <BusinessRecordPanel
         businessId={profileBusinessId}
         onClose={() => setProfileBusinessId(null)}
       />

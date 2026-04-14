@@ -4,6 +4,7 @@ import { Search, SlidersHorizontal, LayoutGrid, Table, Download } from 'lucide-r
 import { getBusinesses } from '@/lib/queries/businesses';
 import { StageBadge, ReviewBadge, ConfidenceDot } from '@/components/StatusBadge';
 import { formatRevenue } from '@/lib/utils';
+import BusinessRecordPanel from '@/components/BusinessRecordPanel';
 import type { CrmStage, ReviewStatus, GbpConfidence } from '@/types/acquira';
 
 type ViewMode = 'table' | 'cards';
@@ -11,6 +12,7 @@ type ViewMode = 'table' | 'cards';
 export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
 
   const { data: businesses = [], isLoading, error } = useQuery({
     queryKey: ['businesses', searchQuery],
@@ -95,7 +97,7 @@ export default function LibraryPage() {
                 {filtered.map((b) => {
                   const cls = Array.isArray(b.classification) ? b.classification[0] : b.classification;
                   return (
-                    <tr key={b.id} className="border-b border-border/50 hover:bg-background-secondary/50 cursor-pointer transition-colors">
+                    <tr key={b.id} className="border-b border-border/50 hover:bg-background-secondary/50 cursor-pointer transition-colors" onClick={() => setSelectedBusinessId(b.id)}>
                       <td className="py-3 pr-4">
                         <div className="text-sm font-medium text-foreground">{b.name}</div>
                         <div className="font-mono text-[10px] text-text-tertiary">{b.phone}</div>
@@ -148,7 +150,7 @@ export default function LibraryPage() {
               {filtered.map((b) => {
                 const cls = Array.isArray(b.classification) ? b.classification[0] : b.classification;
                 return (
-                  <div key={b.id} className="bg-card rounded-lg p-4 border border-border hover:border-primary/30 cursor-pointer transition-colors">
+                  <div key={b.id} className="bg-card rounded-lg p-4 border border-border hover:border-primary/30 cursor-pointer transition-colors" onClick={() => setSelectedBusinessId(b.id)}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-foreground">{b.name}</span>
                       <ReviewBadge status={b.review_status as ReviewStatus} />
@@ -177,6 +179,10 @@ export default function LibraryPage() {
           )}
         </div>
       )}
+      <BusinessRecordPanel
+        businessId={selectedBusinessId}
+        onClose={() => setSelectedBusinessId(null)}
+      />
     </div>
   );
 }
