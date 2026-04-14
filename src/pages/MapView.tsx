@@ -1,9 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { GoogleMap, useJsApiLoader, OverlayView } from '@react-google-maps/api';
-import { SlidersHorizontal, X, Loader2, MapPin, ChevronRight, ChevronDown, RotateCcw, Search } from 'lucide-react';
-import { getMapPinsInBounds } from '@/lib/queries/businesses';
-import { CLASSIFICATION_HIERARCHY, getPrimaryGbpCategories } from '@/lib/classificationHierarchy';
+import { SlidersHorizontal, X, Loader2, MapPin, RotateCcw, ChevronDown, Search } from 'lucide-react';
+import { getMapPinsInBounds, getClassificationTaxonomy, type TaxonomyTree } from '@/lib/queries/businesses';
+import { addToCrm } from '@/lib/queries/crm-actions';
+import { supabase } from '@/integrations/supabase/client';
 import { StageBadge, ReviewBadge } from '@/components/StatusBadge';
+import BusinessProfileModal from '@/components/BusinessProfileModal';
 import type { CrmStage, ReviewStatus } from '@/types/acquira';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -15,26 +18,31 @@ const DEFAULT_ZOOM = 9;
 const LIBRARIES: ('places')[] = ['places'];
 
 const MAP_STYLES: google.maps.MapTypeStyle[] = [
-  { elementType: 'geometry',                          stylers: [{ color: '#0f1629' }] },
-  { elementType: 'labels.text.stroke',                stylers: [{ color: '#0f1629' }] },
-  { elementType: 'labels.text.fill',                  stylers: [{ color: '#3d5a8a' }] },
-  { featureType: 'road',        elementType: 'geometry',          stylers: [{ color: '#162040' }] },
-  { featureType: 'road',        elementType: 'labels.text.fill',  stylers: [{ color: '#2d4a7a' }] },
-  { featureType: 'road.highway',elementType: 'geometry',          stylers: [{ color: '#1a2f5c' }] },
-  { featureType: 'water',       elementType: 'geometry',          stylers: [{ color: '#080f1e' }] },
-  { featureType: 'landscape',   elementType: 'geometry',          stylers: [{ color: '#0d1526' }] },
-  { featureType: 'administrative', elementType: 'geometry.stroke',stylers: [{ color: '#1d2f5c' }] },
-  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#4a6fa5' }] },
-  { featureType: 'administrative.province', elementType: 'labels.text.fill', stylers: [{ color: '#3d5a8a' }] },
-  { featureType: 'poi',     stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { elementType: 'geometry',                         stylers: [{ color: '#080d1a' }] },
+  { elementType: 'labels.text.stroke',               stylers: [{ color: '#080d1a' }] },
+  { elementType: 'labels.text.fill',                 stylers: [{ color: '#2a4478' }] },
+  { featureType: 'road',        elementType: 'geometry',         stylers: [{ color: '#0e1630' }] },
+  { featureType: 'road',        elementType: 'labels.text.fill', stylers: [{ color: '#1e3465' }] },
+  { featureType: 'road.highway',elementType: 'geometry',         stylers: [{ color: '#121d40' }] },
+  { featureType: 'road.highway',elementType: 'geometry.stroke',  stylers: [{ color: '#1a2a55' }] },
+  { featureType: 'water',       elementType: 'geometry',         stylers: [{ color: '#060a14' }] },
+  { featureType: 'landscape',   elementType: 'geometry',         stylers: [{ color: '#0a1020' }] },
+  { featureType: 'landscape.natural',   elementType: 'geometry', stylers: [{ color: '#0a1020' }] },
+  // Bold white state borders
+  { featureType: 'administrative.province', elementType: 'geometry.stroke', stylers: [{ color: '#ffffff' }, { weight: 2.5 }] },
+  { featureType: 'administrative.country', elementType: 'geometry.stroke', stylers: [{ color: '#ffffff' }, { weight: 2 }] },
+  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#3a5a90' }] },
+  { featureType: 'administrative.province', elementType: 'labels.text.fill', stylers: [{ color: '#2a4478' }] },
+  { featureType: 'administrative.land_parcel', elementType: 'geometry.stroke', stylers: [{ color: '#0e1630' }] },
+  { featureType: 'poi',    stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit',stylers: [{ visibility: 'off' }] },
 ];
 
 const PIN_COLORS: Record<string, string> = {
   target:     '#22d3a7',
   watch:      '#f59e0b',
   pass:       '#ef4444',
-  unreviewed: '#3b82f6',
+  unreviewed: '#6b8aff',
 };
 
 const REVIEW_OPTIONS = [
@@ -50,15 +58,7 @@ const NE_STATES = ['CT', 'MA', 'RI', 'NH', 'VT', 'ME', 'NY', 'NJ'];
 type Bounds = { north: number; south: number; east: number; west: number };
 type Pin = Awaited<ReturnType<typeof getMapPinsInBounds>>[number];
 
-// ─── Level label config ───────────────────────────────────────────────────────
-const LEVEL_CONFIG = [
-  { label: 'Vertical',           num: '1', color: 'primary',  bg: 'bg-primary/15',     border: 'border-primary/30',     text: 'text-primary'     },
-  { label: 'Category',           num: '2', color: 'blue',     bg: 'bg-blue-500/10',    border: 'border-blue-500/20',    text: 'text-blue-400'    },
-  { label: 'Business Type',      num: '3', color: 'teal',     bg: 'bg-teal-500/10',    border: 'border-teal-500/20',    text: 'text-teal-400'    },
-  { label: 'Primary GBP Cat.',   num: '4', color: 'violet',   bg: 'bg-violet-500/10',  border: 'border-violet-500/20',  text: 'text-violet-400'  },
-] as const;
-
-// ─── TownSearch Component ────────────────────────────────────────────────────
+// ─── TownSearch Component ─────────────────────────────────────────────────────
 interface TownSearchProps {
   mapRef: React.RefObject<google.maps.Map | null>;
 }
@@ -186,60 +186,69 @@ function TownSearch({ mapRef }: TownSearchProps) {
   );
 }
 
-// ─── DrillDownFilter Component ────────────────────────────────────────────────
-interface DrillDownProps {
-  vertical: string; category: string; businessType: string; gbpCategory: string;
-  onVertical: (v: string) => void;
-  onCategory: (c: string) => void;
-  onBusinessType: (bt: string) => void;
-  onGbpCategory: (g: string) => void;
-}
-
-function DrillItem({
-  label, isSelected, onClick, level, hasChildren,
-}: {
-  label: string; isSelected: boolean; onClick: () => void; level: number; hasChildren?: boolean;
+// ─── Cascading Select Component (Tableau-style) ───────────────────────────────
+function CascadingSelect({ label, value, options, onChange, disabled, placeholder }: {
+  label: string; value: string; options: string[]; onChange: (v: string) => void;
+  disabled?: boolean; placeholder?: string;
 }) {
-  const cfg = LEVEL_CONFIG[level];
   return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left flex items-center justify-between px-2 py-1.5 rounded-md text-xs transition-all leading-tight ${
-        isSelected
-          ? `${cfg.bg} ${cfg.text} border ${cfg.border}`
-          : 'text-muted-foreground hover:text-foreground hover:bg-background-tertiary'
-      }`}
-    >
-      <span>{label}</span>
-      {isSelected
-        ? <ChevronDown className="w-3 h-3 flex-shrink-0 ml-1" />
-        : hasChildren
-        ? <ChevronRight className="w-3 h-3 flex-shrink-0 ml-1 opacity-40" />
-        : null
-      }
-    </button>
+    <div className="relative">
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        disabled={disabled}
+        className={`w-full appearance-none rounded-md border px-2.5 py-1.5 pr-7 text-xs font-mono transition-colors outline-none cursor-pointer
+          ${disabled
+            ? 'border-border/40 bg-background-tertiary/30 text-text-tertiary/40 cursor-not-allowed'
+            : value
+              ? 'border-primary/40 bg-primary/5 text-primary'
+              : 'border-border bg-background-tertiary text-muted-foreground hover:border-primary/30 hover:text-foreground'
+          }`}
+      >
+        <option value="">{placeholder ?? `All ${label}s`}</option>
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+      <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none ${disabled ? 'text-text-tertiary/30' : 'text-text-tertiary'}`} />
+    </div>
   );
 }
 
-function DrillDownFilter({ vertical, category, businessType, gbpCategory, onVertical, onCategory, onBusinessType, onGbpCategory }: DrillDownProps) {
-  const verticals = Object.keys(CLASSIFICATION_HIERARCHY).sort();
-  const categories = vertical ? Object.keys(CLASSIFICATION_HIERARCHY[vertical] ?? {}).sort() : [];
-  const businessTypes = (vertical && category) ? Object.keys(CLASSIFICATION_HIERARCHY[vertical]?.[category] ?? {}).sort() : [];
-  const gbpCategories = (vertical && category && businessType)
-    ? getPrimaryGbpCategories(vertical, category, businessType)
-    : [];
+// ─── Drill-Down Filter Section ────────────────────────────────────────────────
+interface DrillDownProps {
+  taxonomy: TaxonomyTree
+  vertical: string
+  category: string
+  businessType: string
+  subType: string
+  onVerticalChange: (v: string) => void
+  onCategoryChange: (c: string) => void
+  onBusinessTypeChange: (bt: string) => void
+  onSubTypeChange: (st: string) => void
+}
 
-  const hasAnyFilter = !!(vertical || category || businessType || gbpCategory);
-  const breadcrumb = [vertical, category, businessType, gbpCategory].filter(Boolean).join(' › ');
+function DrillDownFilter({
+  taxonomy, vertical, category, businessType, subType,
+  onVerticalChange, onCategoryChange, onBusinessTypeChange, onSubTypeChange,
+}: DrillDownProps) {
+  const verticals = Object.keys(taxonomy).sort()
+  const categories = vertical ? Object.keys(taxonomy[vertical] ?? {}).sort() : []
+  const catData = vertical && category ? taxonomy[vertical]?.[category] : undefined
+  const businessTypes = catData ? (Array.isArray(catData) ? catData as string[] : Object.keys(catData).sort()) : []
+  const subTypes = (!Array.isArray(catData) && vertical && category && businessType)
+    ? (catData?.[businessType] ?? [])
+    : []
+
+  const hasAnyFilter = !!(vertical || category || businessType || subType)
 
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <span className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider">Industry Drill-Down</span>
+        <label className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider">
+          Industry
+        </label>
         {hasAnyFilter && (
           <button
-            onClick={() => { onVertical(''); onCategory(''); onBusinessType(''); onGbpCategory(''); }}
+            onClick={() => { onVerticalChange(''); onCategoryChange(''); onBusinessTypeChange(''); onSubTypeChange(''); }}
             className="flex items-center gap-1 font-mono text-[10px] text-primary hover:text-primary/80 transition-colors"
           >
             <RotateCcw className="w-2.5 h-2.5" />Reset
@@ -247,80 +256,61 @@ function DrillDownFilter({ vertical, category, businessType, gbpCategory, onVert
         )}
       </div>
 
-      {/* L1 — Vertical */}
-      <div className="mb-2">
-        <LevelLabel level={0} />
-        <div className="flex flex-col gap-0.5 mt-1">
-          {verticals.map(v => (
-            <DrillItem key={v} label={v} level={0} isSelected={vertical === v} hasChildren
-              onClick={() => { if (vertical === v) { onVertical(''); onCategory(''); onBusinessType(''); onGbpCategory(''); } else { onVertical(v); onCategory(''); onBusinessType(''); onGbpCategory(''); } }}
-            />
-          ))}
+      <div className="space-y-2">
+        {/* L1 — Vertical */}
+        <CascadingSelect
+          label="Vertical"
+          value={vertical}
+          options={verticals}
+          onChange={v => { onVerticalChange(v); onCategoryChange(''); onBusinessTypeChange(''); onSubTypeChange(''); }}
+          placeholder="All Verticals"
+        />
+
+        {/* L2 — Category */}
+        <div className="ml-3 pl-3 border-l border-border/50">
+          <CascadingSelect
+            label="Category"
+            value={category}
+            options={categories}
+            onChange={c => { onCategoryChange(c); onBusinessTypeChange(''); onSubTypeChange(''); }}
+            disabled={!vertical}
+            placeholder={vertical ? 'All Categories' : 'Select Vertical first'}
+          />
+        </div>
+
+        {/* L3 — Business Type */}
+        <div className="ml-6 pl-3 border-l border-border/50">
+          <CascadingSelect
+            label="Business Type"
+            value={businessType}
+            options={businessTypes}
+            onChange={bt => { onBusinessTypeChange(bt); onSubTypeChange(''); }}
+            disabled={!category}
+            placeholder={category ? 'All Types' : 'Select Category first'}
+          />
+        </div>
+
+        {/* L4 — Sub-Type (primary_gbp_category) */}
+        <div className="ml-9 pl-3 border-l border-border/50">
+          <CascadingSelect
+            label="Sub-Type"
+            value={subType}
+            options={subTypes}
+            onChange={st => onSubTypeChange(st)}
+            disabled={!businessType}
+            placeholder={businessType ? 'All Sub-Types' : 'Select Business Type first'}
+          />
         </div>
       </div>
 
-      {/* L2 — Category */}
-      {vertical && categories.length > 0 && (
-        <div className="ml-3 border-l border-border pl-3 mb-2">
-          <LevelLabel level={1} />
-          <div className="flex flex-col gap-0.5 mt-1">
-            {categories.map(c => (
-              <DrillItem key={c} label={c} level={1} isSelected={category === c} hasChildren
-                onClick={() => { if (category === c) { onCategory(''); onBusinessType(''); onGbpCategory(''); } else { onCategory(c); onBusinessType(''); onGbpCategory(''); } }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* L3 — Business Type */}
-      {category && businessTypes.length > 0 && (
-        <div className="ml-6 border-l border-border pl-3 mb-2">
-          <LevelLabel level={2} />
-          <div className="flex flex-col gap-0.5 mt-1">
-            {businessTypes.map(bt => (
-              <DrillItem key={bt} label={bt} level={2} isSelected={businessType === bt} hasChildren={gbpCategories.length > 0}
-                onClick={() => { if (businessType === bt) { onBusinessType(''); onGbpCategory(''); } else { onBusinessType(bt); onGbpCategory(''); } }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* L4 — Primary GBP Category */}
-      {businessType && gbpCategories.length > 0 && (
-        <div className="ml-9 border-l border-border pl-3 mb-2">
-          <LevelLabel level={3} />
-          <div className="flex flex-col gap-0.5 mt-1">
-            {gbpCategories.map(g => (
-              <DrillItem key={g} label={g} level={3} isSelected={gbpCategory === g}
-                onClick={() => onGbpCategory(gbpCategory === g ? '' : g)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Breadcrumb */}
+      {/* Active filter breadcrumb */}
       {hasAnyFilter && (
-        <div className="mt-2 px-2 py-1.5 rounded-md bg-background-tertiary border border-border text-[10px] font-mono text-muted-foreground leading-relaxed break-words">
-          {breadcrumb}
+        <div className="mt-2 px-2 py-1.5 rounded-md bg-primary/5 border border-primary/20 text-[10px] font-mono text-primary/80 leading-relaxed">
+          {[vertical, category, businessType, subType].filter(Boolean).join(' › ')}
         </div>
       )}
     </div>
-  );
-}
-
-function LevelLabel({ level }: { level: number }) {
-  const cfg = LEVEL_CONFIG[level];
-  return (
-    <div className={`flex items-center gap-1 font-mono text-[9px] uppercase tracking-widest ${cfg.text}`}>
-      <span className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded ${cfg.bg} font-bold text-[8px]`}>
-        {cfg.num}
-      </span>
-      {cfg.label}
-    </div>
-  );
+  )
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -328,18 +318,31 @@ export default function MapView() {
   const [pins, setPins] = useState<Pin[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
+  const [profileBusinessId, setProfileBusinessId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(true);
-  const [filterReview, setFilterReview]           = useState<ReviewStatus | ''>('');
-  const [filterState, setFilterState]             = useState<string>('');
-  const [filterVertical, setFilterVertical]       = useState<string>('');
-  const [filterCategory, setFilterCategory]       = useState<string>('');
+  const [filterReview, setFilterReview] = useState<ReviewStatus | ''>('');
+  const [filterState, setFilterState] = useState<string>('');
+  const [filterCounty, setFilterCounty] = useState<string>('');
+  const [filterVertical, setFilterVertical] = useState<string>('');
+  const [filterCategory, setFilterCategory] = useState<string>('');
   const [filterBusinessType, setFilterBusinessType] = useState<string>('');
-  const [filterGbpCategory, setFilterGbpCategory] = useState<string>('');
+  const [filterSubType, setFilterSubType] = useState<string>('');
+  const [filterInCrm, setFilterInCrm] = useState<'' | 'yes' | 'no'>('');
   const [pinCount, setPinCount] = useState<number>(0);
+  const [addedToCrm, setAddedToCrm] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
 
-  const mapRef        = useRef<google.maps.Map | null>(null);
-  const idleDebounce  = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastBounds    = useRef<Bounds | null>(null);
+  const crmMutation = useMutation({
+    mutationFn: (id: string) => addToCrm(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['businesses'] });
+      setAddedToCrm(prev => new Set(prev).add(id));
+    },
+  });
+
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const idleDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastBounds = useRef<Bounds | null>(null);
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_KEY ?? '',
@@ -347,30 +350,68 @@ export default function MapView() {
     libraries: LIBRARIES,
   });
 
-  // ── Fetch pins for current viewport ──────────────────────────────────────
-  const fetchPins = useCallback(async (map: google.maps.Map, force = false) => {
+  // Fetch taxonomy once for the drill-down UI
+  const { data: taxonomy = {} } = useQuery({
+    queryKey: ['classification-taxonomy'],
+    queryFn: getClassificationTaxonomy,
+    staleTime: 1000 * 60 * 60,
+  });
+
+  // Fetch distinct counties (optionally filtered by state)
+  const { data: counties = [] } = useQuery({
+    queryKey: ['distinct-counties', filterState],
+    queryFn: async () => {
+      let query = supabase
+        .from('businesses')
+        .select('county')
+        .not('county', 'is', null)
+        .order('county')
+        .limit(5000);
+      if (filterState) query = query.eq('state_abbr', filterState);
+      const { data, error } = await query;
+      if (error) throw error;
+      const unique = [...new Set((data ?? []).map(r => r.county).filter(Boolean))] as string[];
+      return unique.sort();
+    },
+    staleTime: 1000 * 60 * 30,
+  });
+
+  // ── Fetch pins for the current viewport ──────────────────────────────────
+  const fetchPinsForViewport = useCallback(async (map: google.maps.Map, force = false) => {
     const b = map.getBounds();
     if (!b) return;
+
     const bounds: Bounds = {
-      north: b.getNorthEast().lat(), south: b.getSouthWest().lat(),
-      east:  b.getNorthEast().lng(), west:  b.getSouthWest().lng(),
+      north: b.getNorthEast().lat(),
+      south: b.getSouthWest().lat(),
+      east:  b.getNorthEast().lng(),
+      west:  b.getSouthWest().lng(),
     };
+
     if (!force && lastBounds.current) {
-      const p = lastBounds.current;
-      if (Math.abs(bounds.north - p.north) < 0.01 && Math.abs(bounds.south - p.south) < 0.01 &&
-          Math.abs(bounds.east  - p.east)  < 0.01 && Math.abs(bounds.west  - p.west)  < 0.01) return;
+      const prev = lastBounds.current;
+      if (
+        Math.abs(bounds.north - prev.north) < 0.01 &&
+        Math.abs(bounds.south - prev.south) < 0.01 &&
+        Math.abs(bounds.east  - prev.east)  < 0.01 &&
+        Math.abs(bounds.west  - prev.west)  < 0.01
+      ) return;
     }
+
     lastBounds.current = bounds;
     setLoading(true);
     setSelectedPin(null);
+
     try {
       const data = await getMapPinsInBounds(bounds, {
-        review_status:       filterReview as ReviewStatus || undefined,
-        state_abbr:          filterState || undefined,
-        vertical:            filterVertical || undefined,
-        category:            filterCategory || undefined,
-        business_type:       filterBusinessType || undefined,
-        primary_gbp_category: filterGbpCategory || undefined,
+        review_status:  filterReview as ReviewStatus || undefined,
+        state_abbr:     filterState || undefined,
+        county:         filterCounty || undefined,
+        vertical:       filterVertical || undefined,
+        category:       filterCategory || undefined,
+        business_type:  filterBusinessType || undefined,
+        primary_gbp_category: filterSubType || undefined,
+        in_crm:         filterInCrm === 'yes' ? true : filterInCrm === 'no' ? false : undefined,
       }, 500);
       setPins(data);
       setPinCount(data.length);
@@ -379,29 +420,37 @@ export default function MapView() {
     } finally {
       setLoading(false);
     }
-  }, [filterReview, filterState, filterVertical, filterCategory, filterBusinessType, filterGbpCategory]);
+  }, [filterReview, filterState, filterCounty, filterVertical, filterCategory, filterBusinessType, filterSubType, filterInCrm]);
 
   const onIdle = useCallback(() => {
     if (!mapRef.current) return;
     if (idleDebounce.current) clearTimeout(idleDebounce.current);
-    idleDebounce.current = setTimeout(() => fetchPins(mapRef.current!), 300);
-  }, [fetchPins]);
+    idleDebounce.current = setTimeout(() => {
+      fetchPinsForViewport(mapRef.current!);
+    }, 300);
+  }, [fetchPinsForViewport]);
 
-  // Re-fetch on filter change
+  // Re-fetch when any filter changes
   useEffect(() => {
-    if (mapRef.current) { lastBounds.current = null; fetchPins(mapRef.current, true); }
-  }, [filterReview, filterState, filterVertical, filterCategory, filterBusinessType, filterGbpCategory, fetchPins]);
+    if (mapRef.current) {
+      lastBounds.current = null;
+      fetchPinsForViewport(mapRef.current, true);
+    }
+  }, [filterReview, filterState, filterCounty, filterVertical, filterCategory, filterBusinessType, filterSubType, filterInCrm, fetchPinsForViewport]);
 
-  const onMapLoad = useCallback((map: google.maps.Map) => { mapRef.current = map; }, []);
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+  }, []);
 
-  const activeFilterCount = [filterReview, filterState, filterVertical, filterCategory, filterBusinessType, filterGbpCategory].filter(Boolean).length;
+  // Count active filters for the badge
+  const activeFilterCount = [filterReview, filterState, filterCounty, filterVertical, filterCategory, filterBusinessType, filterInCrm].filter(Boolean).length;
 
   return (
     <div className="h-screen flex overflow-hidden relative">
 
-      {/* ── Sidebar ──────────────────────────────────────────────────────── */}
+      {/* ── Filter Sidebar ──────────────────────────────────────────────── */}
       {showFilters && (
-        <div className="w-[268px] flex-shrink-0 bg-background-secondary border-r border-border flex flex-col z-10">
+        <div className="w-[260px] flex-shrink-0 bg-background-secondary border-r border-border flex flex-col z-10">
           {/* Header */}
           <div className="px-5 py-4 border-b border-border flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2">
@@ -419,7 +468,7 @@ export default function MapView() {
 
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
 
-            {/* ── Town Search ──────────────────────────────────────────────── */}
+            {/* ── Town / City Search ────────────────────────────────────── */}
             <div className="border-b border-border pb-4">
               <span className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider block mb-2">Location Search</span>
               <TownSearch mapRef={mapRef} />
@@ -433,22 +482,28 @@ export default function MapView() {
               <div className="font-mono text-[10px] text-text-tertiary mt-0.5">in current viewport</div>
             </div>
 
-            {/* ── L1→L4 Industry Drill-Down ───────────────────────────── */}
+            {/* ── Industry Drill-Down ───────────────────────────────────── */}
             <div className="border-b border-border pb-5">
               <DrillDownFilter
-                vertical={filterVertical}       category={filterCategory}
-                businessType={filterBusinessType} gbpCategory={filterGbpCategory}
-                onVertical={setFilterVertical}   onCategory={setFilterCategory}
-                onBusinessType={setFilterBusinessType} onGbpCategory={setFilterGbpCategory}
+                taxonomy={taxonomy}
+                vertical={filterVertical}
+                category={filterCategory}
+                businessType={filterBusinessType}
+                subType={filterSubType}
+                onVerticalChange={setFilterVertical}
+                onCategoryChange={setFilterCategory}
+                onBusinessTypeChange={setFilterBusinessType}
+                onSubTypeChange={setFilterSubType}
               />
             </div>
 
-            {/* ── Review Status ────────────────────────────────────────── */}
+            {/* ── Review Status ─────────────────────────────────────────── */}
             <div className="border-b border-border pb-5">
-              <span className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider block mb-2">Review Status</span>
+              <label className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider block mb-2">Review Status</label>
               <div className="space-y-0.5">
                 {REVIEW_OPTIONS.map(opt => (
-                  <button key={opt.value}
+                  <button
+                    key={opt.value}
                     onClick={() => setFilterReview(opt.value as ReviewStatus | '')}
                     className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all ${
                       filterReview === opt.value
@@ -456,31 +511,71 @@ export default function MapView() {
                         : 'text-muted-foreground hover:text-foreground hover:bg-background-tertiary'
                     }`}
                   >
-                    {opt.value && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: PIN_COLORS[opt.value] ?? '#888' }} />}
+                    {opt.value && (
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: PIN_COLORS[opt.value] ?? '#888' }} />
+                    )}
                     <span>{opt.label}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* ── State ────────────────────────────────────────────────── */}
+            {/* ── In CRM ───────────────────────────────────────────────── */}
             <div className="border-b border-border pb-5">
-              <span className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider block mb-2">State</span>
-              <div className="flex flex-wrap gap-1.5">
-                <button onClick={() => setFilterState('')}
-                  className={`px-2 py-0.5 rounded text-[11px] font-mono font-medium transition-colors ${!filterState ? 'bg-primary text-primary-foreground' : 'bg-background-tertiary text-muted-foreground hover:text-foreground'}`}
-                >All</button>
-                {NE_STATES.map(s => (
-                  <button key={s} onClick={() => setFilterState(filterState === s ? '' : s)}
-                    className={`px-2 py-0.5 rounded text-[11px] font-mono font-medium transition-colors ${filterState === s ? 'bg-primary text-primary-foreground' : 'bg-background-tertiary text-muted-foreground hover:text-foreground'}`}
-                  >{s}</button>
+              <label className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider block mb-2">In CRM</label>
+              <div className="space-y-0.5">
+                {[{ value: '', label: 'All' }, { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setFilterInCrm(opt.value as '' | 'yes' | 'no')}
+                    className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all ${
+                      filterInCrm === opt.value
+                        ? 'bg-primary/15 text-primary border border-primary/30'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-background-tertiary'
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                  </button>
                 ))}
+              </div>
+            </div>
+
+            {/* ── Geography ────────────────────────────────────────────── */}
+            <div>
+              <label className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider block mb-3">Geography</label>
+              
+              {/* State */}
+              <div className="mb-2">
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => { setFilterState(''); setFilterCounty(''); }}
+                    className={`px-2 py-0.5 rounded text-[11px] font-mono font-medium transition-colors ${!filterState ? 'bg-primary text-primary-foreground' : 'bg-background-tertiary text-muted-foreground hover:text-foreground'}`}
+                  >All</button>
+                  {NE_STATES.map(s => (
+                    <button key={s}
+                      onClick={() => { setFilterState(filterState === s ? '' : s); setFilterCounty(''); }}
+                      className={`px-2 py-0.5 rounded text-[11px] font-mono font-medium transition-colors ${filterState === s ? 'bg-primary text-primary-foreground' : 'bg-background-tertiary text-muted-foreground hover:text-foreground'}`}
+                    >{s}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* County dropdown */}
+              <div className="ml-3 pl-3 border-l border-border/50">
+                <CascadingSelect
+                  label="County"
+                  value={filterCounty}
+                  options={counties}
+                  onChange={setFilterCounty}
+                  disabled={!filterState}
+                  placeholder={filterState ? 'All Counties' : 'Select State first'}
+                />
               </div>
             </div>
 
             {/* ── Legend ───────────────────────────────────────────────── */}
             <div>
-              <span className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider block mb-2">Legend</span>
+              <label className="font-mono text-[10px] text-text-tertiary uppercase tracking-wider block mb-2">Legend</label>
               <div className="grid grid-cols-2 gap-y-1.5 gap-x-2">
                 {Object.entries(PIN_COLORS).map(([status, color]) => (
                   <div key={status} className="flex items-center gap-1.5">
@@ -495,28 +590,29 @@ export default function MapView() {
         </div>
       )}
 
-      {/* ── Map Area ─────────────────────────────────────────────────────── */}
+      {/* ── Map Area ──────────────────────────────────────────────────────── */}
       <div className="flex-1 relative">
 
-        {/* Toggle filters button */}
-        {!showFilters && (
-          <div className="absolute top-4 left-4 z-10">
+        {/* Top controls */}
+        <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
+          {!showFilters && (
             <button
               onClick={() => setShowFilters(true)}
               className="relative flex items-center gap-1.5 px-3 py-2 rounded-lg bg-card/90 backdrop-blur border border-border text-sm text-muted-foreground hover:text-foreground shadow-lg transition-colors"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5" />Filters
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              Filters
               {activeFilterCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4 h-4 rounded-full bg-primary text-primary-foreground font-mono text-[9px] font-bold">
                   {activeFilterCount}
                 </span>
               )}
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Pin count / loading */}
-        <div className="absolute top-4 right-4 z-10">
+        {/* Pin count + loading */}
+        <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
           {loading ? (
             <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-card/90 backdrop-blur border border-border text-xs font-mono text-primary shadow-lg">
               <Loader2 className="w-3 h-3 animate-spin" />Loading…
@@ -551,17 +647,31 @@ export default function MapView() {
               if (!pin.lat || !pin.lng) return null;
               const color = PIN_COLORS[pin.review_status as string] ?? PIN_COLORS.unreviewed;
               const isSelected = selectedPin?.id === pin.id;
+
               return (
-                <OverlayView key={pin.id} position={{ lat: pin.lat, lng: pin.lng }} mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}>
-                  <div onClick={(e) => { e.stopPropagation(); setSelectedPin(pin); }} className="cursor-pointer"
-                       style={{ position: 'absolute', transform: 'translate(-50%, -50%)' }}>
-                    <div style={{
-                      width: isSelected ? 14 : 10, height: isSelected ? 14 : 10,
-                      borderRadius: '50%', backgroundColor: color,
-                      border: isSelected ? '2px solid white' : '1.5px solid rgba(255,255,255,0.3)',
-                      boxShadow: isSelected ? `0 0 0 4px ${color}40, 0 2px 8px rgba(0,0,0,0.5)` : '0 1px 4px rgba(0,0,0,0.4)',
-                      transition: 'all 0.15s ease',
-                    }} />
+                <OverlayView
+                  key={pin.id}
+                  position={{ lat: pin.lat, lng: pin.lng }}
+                  mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                >
+                  <div
+                    onClick={(e) => { e.stopPropagation(); setSelectedPin(pin); }}
+                    className="cursor-pointer"
+                    style={{ position: 'absolute', transform: 'translate(-50%, -50%)' }}
+                  >
+                    <div
+                      style={{
+                        width: isSelected ? 14 : 10,
+                        height: isSelected ? 14 : 10,
+                        borderRadius: '50%',
+                        backgroundColor: color,
+                        border: isSelected ? '2px solid white' : '1.5px solid rgba(255,255,255,0.3)',
+                        boxShadow: isSelected
+                          ? `0 0 0 4px ${color}40, 0 2px 8px rgba(0,0,0,0.5)`
+                          : '0 1px 4px rgba(0,0,0,0.4)',
+                        transition: 'all 0.15s ease',
+                      }}
+                    />
                   </div>
                 </OverlayView>
               );
@@ -573,7 +683,7 @@ export default function MapView() {
           </div>
         )}
 
-        {/* ── Pin info card ──────────────────────────────────────────────── */}
+        {/* ── Pin info card ─────────────────────────────────────────────── */}
         {selectedPin && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[420px] max-w-[90vw]"
                style={{ animation: 'slideUp 0.2s ease' }}>
@@ -605,21 +715,17 @@ export default function MapView() {
                 if (!cls) return null;
                 return (
                   <div className="mt-2.5 space-y-0.5">
-                    {/* L1 › L2 › L3 breadcrumb */}
                     {cls.vertical && (
-                      <div className="font-mono text-[10px] text-text-tertiary leading-relaxed">
+                      <div className="font-mono text-[10px] text-text-tertiary">
                         {cls.vertical}
                         {cls.category && <span className="text-muted-foreground"> › {cls.category}</span>}
-                        {cls.business_type && <span className="text-muted-foreground"> › {cls.business_type}</span>}
                       </div>
                     )}
-                    {/* L4 Primary GBP Category */}
-                    {cls.primary_gbp_category && (
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded bg-violet-500/20 text-violet-400 font-bold font-mono text-[8px]">4</span>
-                        <span className="font-mono text-[11px] text-violet-400">{cls.primary_gbp_category}</span>
+                    {cls.business_type && (
+                      <div className="font-mono text-[11px] text-foreground">
+                        {cls.business_type}
                         {cls.gbp_confidence && (
-                          <span className={`ml-1 text-[10px] ${
+                          <span className={`ml-2 text-[10px] ${
                             cls.gbp_confidence === 'High'   ? 'text-success' :
                             cls.gbp_confidence === 'Medium' ? 'text-warning' : 'text-text-tertiary'
                           }`}>● {cls.gbp_confidence}</span>
@@ -638,17 +744,36 @@ export default function MapView() {
               )}
 
               <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
-                <button className="flex-1 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors">
-                  Add to CRM
-                </button>
-                <button className="flex-1 py-1.5 rounded-lg bg-background-tertiary text-foreground text-xs font-medium hover:bg-background-quaternary transition-colors">
-                  Mark as Target
+                {addedToCrm.has(selectedPin.id) ? (
+                  <div className="flex-1 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium text-center">
+                    ✓ In CRM
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { crmMutation.mutate(selectedPin.id); }}
+                    disabled={crmMutation.isPending}
+                    className="flex-1 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    {crmMutation.isPending ? '…' : 'Add to CRM'}
+                  </button>
+                )}
+                <button
+                  onClick={() => { setProfileBusinessId(selectedPin.id); }}
+                  className="flex-1 py-1.5 rounded-lg bg-background-tertiary text-foreground text-xs font-medium hover:bg-background-quaternary transition-colors"
+                >
+                  View Profile
                 </button>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Profile Modal */}
+      <BusinessProfileModal
+        businessId={profileBusinessId}
+        onClose={() => setProfileBusinessId(null)}
+      />
 
       <style>{`
         @keyframes slideUp {
