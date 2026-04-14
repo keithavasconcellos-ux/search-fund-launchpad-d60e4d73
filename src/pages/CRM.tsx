@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Plus, LayoutGrid, Table, Clock } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import { updateCrmStage } from '@/lib/queries/businesses';
 import { supabase } from '@/integrations/supabase/client';
 import { StageBadge } from '@/components/StatusBadge';
