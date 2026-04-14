@@ -14,3 +14,17 @@ export async function addToCrm(businessId: string) {
 
   if (error) throw error
 }
+
+/** Remove a business from CRM */
+export async function removeFromCrm(businessId: string) {
+  const { error } = await supabase
+    .from('businesses')
+    .update({
+      in_crm: false,
+      review_status: 'unreviewed',
+      review_status_set_at: new Date().toISOString(),
+    } as any)
+    .eq('id', businessId)
+
+  if (error) throw error
+}
