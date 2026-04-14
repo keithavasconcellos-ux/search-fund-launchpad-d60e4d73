@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Plus, LayoutGrid, Table, Clock } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import { updateCrmStage } from '@/lib/queries/businesses';
 import { supabase } from '@/integrations/supabase/client';
 import { StageBadge } from '@/components/StatusBadge';
@@ -49,6 +50,31 @@ export default function CRM() {
   // Active stages matching the DB (exclude 'passed' from kanban view)
   const kanbanStages: CrmStage[] = ['identified', 'contacted', 'engaged', 'nda_signed', 'cim_received', 'active_loi'];
 
+  const handleDragEnd = (result: DropResult) => {
+    const { draggableId, source, destination } = result;
+    if (!destination || destination.droppableId === source.droppableId) return;
+
+    const fromStage = source.droppableId as CrmStage;
+    const toStage = destination.droppableId as CrmStage;
+
+    // Optimistic update
+    queryClient.setQueryData(['businesses', 'crm'], (old: any[]) =>
+      old?.map((b) => (b.id === draggableId ? { ...b, crm_stage: toStage } : b))
+    );
+
+    stageMutation.mutate(
+      { id: draggableId, from: fromStage, to: toStage },
+      {
+        onError: () => {
+          // Revert on failure
+          queryClient.setQueryData(['businesses', 'crm'], (old: any[]) =>
+            old?.map((b) => (b.id === draggableId ? { ...b, crm_stage: fromStage } : b))
+          );
+        },
+      }
+    );
+  };
+
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
@@ -86,56 +112,77 @@ export default function CRM() {
               <span className="font-mono text-xs text-text-tertiary animate-pulse">Loading pipeline…</span>
             </div>
           ) : (
-            <div className="flex gap-4 min-w-max">
-              {kanbanStages.map((stage) => {
-                const stageBizs = businessesByStage(stage);
-                return (
-                  <div key={stage} className="w-[260px] flex-shrink-0">
-                    <div className="flex items-center justify-between mb-3 px-1">
-                      <div className="flex items-center gap-2">
-                        <StageBadge stage={stage} />
-                        <span className="font-mono text-[11px] text-text-tertiary">{stageBizs.length}</span>
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <div className="flex gap-4 min-w-max">
+                {kanbanStages.map((stage) => {
+                  const stageBizs = businessesByStage(stage);
+                  return (
+                    <div key={stage} className="w-[260px] flex-shrink-0">
+                      <div className="flex items-center justify-between mb-3 px-1">
+                        <div className="flex items-center gap-2">
+                          <StageBadge stage={stage} />
+                          <span className="font-mono text-[11px] text-text-tertiary">{stageBizs.length}</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-0">
-                      {stageBizs.map((b) => {
-                        const cls = Array.isArray(b.classification) ? b.classification[0] : b.classification;
-                        return (
+                      <Droppable droppableId={stage}>
+                        {(provided, snapshot) => (
                           <div
-                            key={b.id}
-                            onClick={() => setSelectedBusinessId(b.id)}
-                            className="bg-background-secondary rounded-lg p-3.5 border border-border hover:border-primary/30 cursor-pointer transition-colors mb-2"
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            className={`min-h-[80px] rounded-lg transition-colors ${
+                              snapshot.isDraggingOver ? 'bg-primary/5 ring-1 ring-primary/20' : ''
+                            }`}
                           >
-                            <div className="font-medium text-sm text-foreground mb-1">{b.name}</div>
-                            <div className="font-mono text-[11px] text-muted-foreground mb-2">
-                              {cls?.business_type ?? '—'} · {b.address ?? '—'}
-                            </div>
-                            {b.revenue_est_low && b.revenue_est_high && (
-                              <div className="font-mono text-[11px] text-text-tertiary">
-                                {formatRevenue(b.revenue_est_low)} – {formatRevenue(b.revenue_est_high)}
-                              </div>
-                            )}
-                            {b.deal_confidence_score && (
-                              <div className="mt-2 flex items-center gap-2">
-                                <div className="flex-1 bg-background-tertiary rounded-full h-1">
-                                  <div className="bg-primary rounded-full h-1" style={{ width: `${b.deal_confidence_score}%` }} />
-                                </div>
-                                <span className="font-mono text-[10px] text-text-tertiary">{b.deal_confidence_score}</span>
+                            {stageBizs.map((b, index) => {
+                              const cls = Array.isArray(b.classification) ? b.classification[0] : b.classification;
+                              return (
+                                <Draggable key={b.id} draggableId={b.id} index={index}>
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      onClick={() => !snapshot.isDragging && setSelectedBusinessId(b.id)}
+                                      className={`bg-background-secondary rounded-lg p-3.5 border border-border hover:border-primary/30 cursor-grab active:cursor-grabbing transition-colors mb-2 ${
+                                        snapshot.isDragging ? 'shadow-lg ring-1 ring-primary/30' : ''
+                                      }`}
+                                    >
+                                      <div className="font-medium text-sm text-foreground mb-1">{b.name}</div>
+                                      <div className="font-mono text-[11px] text-muted-foreground mb-2">
+                                        {cls?.business_type ?? '—'} · {b.address ?? '—'}
+                                      </div>
+                                      {b.revenue_est_low && b.revenue_est_high && (
+                                        <div className="font-mono text-[11px] text-text-tertiary">
+                                          {formatRevenue(b.revenue_est_low)} – {formatRevenue(b.revenue_est_high)}
+                                        </div>
+                                      )}
+                                      {b.deal_confidence_score && (
+                                        <div className="mt-2 flex items-center gap-2">
+                                          <div className="flex-1 bg-background-tertiary rounded-full h-1">
+                                            <div className="bg-primary rounded-full h-1" style={{ width: `${b.deal_confidence_score}%` }} />
+                                          </div>
+                                          <span className="font-mono text-[10px] text-text-tertiary">{b.deal_confidence_score}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </Draggable>
+                              );
+                            })}
+                            {provided.placeholder}
+                            {stageBizs.length === 0 && !snapshot.isDraggingOver && (
+                              <div className="rounded-lg border border-dashed border-border p-6 text-center">
+                                <span className="text-xs text-text-tertiary">No deals</span>
                               </div>
                             )}
                           </div>
-                        );
-                      })}
-                      {stageBizs.length === 0 && (
-                        <div className="rounded-lg border border-dashed border-border p-6 text-center">
-                          <span className="text-xs text-text-tertiary">No deals</span>
-                        </div>
-                      )}
+                        )}
+                      </Droppable>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </DragDropContext>
           )}
         </div>
       )}
