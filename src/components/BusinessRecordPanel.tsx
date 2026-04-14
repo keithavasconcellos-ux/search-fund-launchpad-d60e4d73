@@ -4,8 +4,9 @@ import { X, Mail, StickyNote, MoreHorizontal, Star, ExternalLink } from 'lucide-
 import { getBusinessById } from '@/lib/queries/businesses';
 import { addToCrm } from '@/lib/queries/crm-actions';
 import { StageBadge } from '@/components/StatusBadge';
+import ReviewStatusDropdown from '@/components/ReviewStatusDropdown';
 import { formatRevenue } from '@/lib/utils';
-import type { CrmStage } from '@/types/acquira';
+import type { CrmStage, ReviewStatus } from '@/types/acquira';
 
 type Tab = 'overview' | 'contacts' | 'emails' | 'notes' | 'docs' | 'cim';
 
@@ -89,6 +90,7 @@ export default function BusinessRecordPanel({ businessId, onClose }: Props) {
                   </span>
                 )}
                 {biz.crm_stage && <StageBadge stage={biz.crm_stage as CrmStage} />}
+                <ReviewStatusDropdown businessId={biz.id} currentStatus={biz.review_status as ReviewStatus} compact />
                 {biz.rating != null && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-warning/20 text-warning">
                     <Star className="w-3 h-3" />

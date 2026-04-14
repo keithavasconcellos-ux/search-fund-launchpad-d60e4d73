@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Search, SlidersHorizontal, LayoutGrid, Table, Download } from 'lucide-react';
 import { getBusinesses } from '@/lib/queries/businesses';
-import { StageBadge, ReviewBadge, ConfidenceDot } from '@/components/StatusBadge';
+import { StageBadge, ConfidenceDot } from '@/components/StatusBadge';
+import ReviewStatusDropdown from '@/components/ReviewStatusDropdown';
 import { formatRevenue } from '@/lib/utils';
 import BusinessRecordPanel from '@/components/BusinessRecordPanel';
 import type { CrmStage, ReviewStatus, GbpConfidence } from '@/types/acquira';
@@ -112,7 +113,7 @@ export default function LibraryPage() {
                       </td>
                       <td className="py-3 pr-4 text-xs text-muted-foreground">{b.address ?? '—'}</td>
                       <td className="py-3 pr-4">
-                        <ReviewBadge status={b.review_status as ReviewStatus} />
+                        <ReviewStatusDropdown businessId={b.id} currentStatus={b.review_status as ReviewStatus} compact />
                       </td>
                       <td className="py-3 pr-4 font-mono text-xs text-muted-foreground">
                         {b.revenue_est_low && b.revenue_est_high
@@ -153,7 +154,7 @@ export default function LibraryPage() {
                   <div key={b.id} className="bg-card rounded-lg p-4 border border-border hover:border-primary/30 cursor-pointer transition-colors" onClick={() => setSelectedBusinessId(b.id)}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-foreground">{b.name}</span>
-                      <ReviewBadge status={b.review_status as ReviewStatus} />
+                      <ReviewStatusDropdown businessId={b.id} currentStatus={b.review_status as ReviewStatus} compact />
                     </div>
                     <div className="font-mono text-[11px] text-muted-foreground mb-1">
                       {cls?.business_type ?? '—'}{cls?.vertical ? ` · ${cls.vertical}` : ''}
