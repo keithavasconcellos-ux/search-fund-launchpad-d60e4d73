@@ -241,7 +241,7 @@ const SAMPLE_DATA: Record<string, string> = {
 function replaceMergeTags(text: string): string {
   let result = text
   for (const [tag, value] of Object.entries(SAMPLE_DATA)) {
-    result = result.replaceAll(tag, value)
+    result = result.split(tag).join(value)
   }
   return result
 }

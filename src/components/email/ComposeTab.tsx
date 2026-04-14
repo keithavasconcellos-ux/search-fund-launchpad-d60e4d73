@@ -106,7 +106,7 @@ export default function ComposeTab() {
     setBatchScheduleOpen(false)
   }
 
-  const personalizationFields = selectedThread?.metadata?.personalization_fields as string[] | undefined
+  const personalizationFields = (selectedThread as any)?.metadata?.personalization_fields as string[] | undefined
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64 text-muted-foreground font-mono text-sm">Loading queue…</div>
