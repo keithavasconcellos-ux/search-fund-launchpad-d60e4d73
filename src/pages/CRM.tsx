@@ -4,6 +4,7 @@ import { Plus, LayoutGrid, Table, Clock } from 'lucide-react';
 import { updateCrmStage } from '@/lib/queries/businesses';
 import { supabase } from '@/integrations/supabase/client';
 import { StageBadge } from '@/components/StatusBadge';
+import BusinessRecordPanel from '@/components/BusinessRecordPanel';
 import { formatRevenue } from '@/lib/utils';
 import { CRM_STAGES, CRM_STAGE_LABELS } from '@/types/acquira';
 import type { CrmStage } from '@/types/acquira';
@@ -15,6 +16,7 @@ const PLACEHOLDER_USER_ID = '00000000-0000-0000-0000-000000000000';
 
 export default function CRM() {
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: businesses = [], isLoading } = useQuery({
