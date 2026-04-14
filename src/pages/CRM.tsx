@@ -103,6 +103,7 @@ export default function CRM() {
                         return (
                           <div
                             key={b.id}
+                            onClick={() => setSelectedBusinessId(b.id)}
                             className="bg-background-secondary rounded-lg p-3.5 border border-border hover:border-primary/30 cursor-pointer transition-colors mb-2"
                           >
                             <div className="font-medium text-sm text-foreground mb-1">{b.name}</div>
@@ -159,7 +160,7 @@ export default function CRM() {
                 {businesses.filter(b => b.crm_stage && b.crm_stage !== 'passed').map((b) => {
                   const cls = Array.isArray(b.classification) ? b.classification[0] : b.classification;
                   return (
-                    <tr key={b.id} className="border-b border-border/50 hover:bg-background-secondary/50 cursor-pointer transition-colors">
+                    <tr key={b.id} className="border-b border-border/50 hover:bg-background-secondary/50 cursor-pointer transition-colors" onClick={() => setSelectedBusinessId(b.id)}>
                       <td className="py-3 pr-4 text-sm font-medium text-foreground">{b.name}</td>
                       <td className="py-3 pr-4 font-mono text-xs text-muted-foreground">
                         {cls?.business_type ?? '—'}{cls?.vertical ? ` · ${cls.vertical}` : ''}
@@ -199,7 +200,7 @@ export default function CRM() {
                 .filter(b => b.last_activity_at)
                 .sort((a, b) => new Date(b.last_activity_at!).getTime() - new Date(a.last_activity_at!).getTime())
                 .map((b) => (
-                  <div key={b.id} className="flex gap-4 items-start">
+                  <div key={b.id} className="flex gap-4 items-start cursor-pointer" onClick={() => setSelectedBusinessId(b.id)}>
                     <div className="font-mono text-[11px] text-text-tertiary w-16 pt-1 text-right">
                       {new Date(b.last_activity_at!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </div>
