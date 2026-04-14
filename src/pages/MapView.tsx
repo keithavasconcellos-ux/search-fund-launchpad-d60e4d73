@@ -702,7 +702,12 @@ export default function MapView() {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap mt-3">
-                <ReviewBadge status={selectedPin.review_status as ReviewStatus} />
+                <ReviewStatusDropdown
+                  businessId={selectedPin.id}
+                  currentStatus={selectedPin.review_status as ReviewStatus}
+                  compact
+                  onUpdated={(s) => setPins(prev => prev.map(p => p.id === selectedPin.id ? { ...p, review_status: s } : p))}
+                />
                 <StageBadge stage={selectedPin.crm_stage as CrmStage} />
                 {selectedPin.county && (
                   <span className="font-mono text-[10px] text-text-tertiary bg-background-tertiary px-1.5 py-0.5 rounded">
