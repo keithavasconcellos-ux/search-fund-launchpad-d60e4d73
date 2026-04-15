@@ -6,9 +6,14 @@ import type { CrmStage, ReviewStatus } from '../../types/acquira'
 export async function getBusinesses(filters?: {
   crm_stage?: CrmStage
   vertical?: string
+  category?: string
+  business_type?: string
   sf_score_min?: number
   review_status?: ReviewStatus
   search?: string
+  state_abbr?: string
+  county?: string
+  in_crm?: boolean
   limit?: number
   offset?: number
 }) {
@@ -26,6 +31,12 @@ export async function getBusinesses(filters?: {
   if (filters?.crm_stage)      query = query.eq('crm_stage', filters.crm_stage)
   if (filters?.review_status)  query = query.eq('review_status', filters.review_status)
   if (filters?.search)         query = query.ilike('name', `%${filters.search}%`)
+  if (filters?.state_abbr)     query = query.eq('state_abbr', filters.state_abbr)
+  if (filters?.county)         query = query.eq('county', filters.county)
+  if (filters?.in_crm !== undefined) query = query.eq('in_crm', filters.in_crm)
+  if (filters?.vertical)       query = query.eq('business_classifications.vertical', filters.vertical)
+  if (filters?.category)       query = query.eq('business_classifications.category', filters.category)
+  if (filters?.business_type)  query = query.eq('business_classifications.business_type', filters.business_type)
   if (filters?.limit)          query = query.limit(filters.limit)
   if (filters?.offset != null && filters?.limit)
     query = query.range(filters.offset, filters.offset + (filters.limit ?? 50) - 1)
