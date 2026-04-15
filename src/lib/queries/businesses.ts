@@ -149,7 +149,7 @@ export async function getMapPinsInBounds(
   limit = 500
 ): Promise<MapPin[]> {
   const hasClsFilter = !!(filters?.vertical || filters?.category || filters?.business_type || filters?.primary_gbp_category)
-  const clsJoin = hasClsFilter ? 'business_classifications!inner' : 'business_classifications'
+  const clsJoin = 'business_classifications!inner'
 
   let query = supabase
     .from('businesses')
