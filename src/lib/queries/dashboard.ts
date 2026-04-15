@@ -4,7 +4,8 @@ import { supabase } from '../supabase'
 export async function getPipelineFunnelCounts() {
   const { data, error } = await supabase
     .from('businesses')
-    .select('crm_stage')
+    .select('crm_stage, classification:business_classifications!inner(vertical)')
+    .neq('business_classifications.vertical', 'Out of Scope')
 
   if (error) throw error
 
@@ -22,7 +23,7 @@ export async function getDashboardKpis(periodDays: number = 7) {
   const sinceISO = since.toISOString()
 
   const [businessCount, emailStats, recentActivity] = await Promise.all([
-    supabase.from('businesses').select('id', { count: 'exact', head: true }),
+    supabase.from('businesses').select('id, classification:business_classifications!inner(vertical)', { count: 'exact', head: true }).neq('business_classifications.vertical', 'Out of Scope'),
     supabase.from('email_threads')
       .select('status, response_classification')
       .gte('sent_at', sinceISO),
@@ -52,8 +53,9 @@ export async function getNeedsAttention() {
     .from('businesses')
     .select(`
       id, name, crm_stage, last_activity_at,
-      classification:business_classifications(business_type)
+      classification:business_classifications!inner(vertical, business_type)
     `)
+    .neq('business_classifications.vertical', 'Out of Scope')
     .in('crm_stage', ['engaged', 'nda_signed', 'active_loi'])
     .order('last_activity_at', { ascending: true })
     .limit(10)

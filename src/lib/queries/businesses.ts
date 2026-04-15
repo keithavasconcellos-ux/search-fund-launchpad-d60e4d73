@@ -16,10 +16,11 @@ export async function getBusinesses(filters?: {
     .from('businesses')
     .select(`
       *,
-      classification:business_classifications(
+      classification:business_classifications!inner(
         vertical, category, business_type, gbp_confidence, sf_score
       )
     `)
+    .neq('business_classifications.vertical', 'Out of Scope')
     .order('last_activity_at', { ascending: false, nullsFirst: false })
 
   if (filters?.crm_stage)      query = query.eq('crm_stage', filters.crm_stage)
@@ -148,7 +149,7 @@ export async function getMapPinsInBounds(
   limit = 500
 ): Promise<MapPin[]> {
   const hasClsFilter = !!(filters?.vertical || filters?.category || filters?.business_type || filters?.primary_gbp_category)
-  const clsJoin = hasClsFilter ? 'business_classifications!inner' : 'business_classifications'
+  const clsJoin = 'business_classifications!inner'
 
   let query = supabase
     .from('businesses')
@@ -172,6 +173,7 @@ export async function getMapPinsInBounds(
   query = query
     .not('lat', 'is', null)
     .not('lng', 'is', null)
+    .neq('business_classifications.vertical', 'Out of Scope')
     .gte('lat', bounds.south)
     .lte('lat', bounds.north)
     .gte('lng', bounds.west)
@@ -217,7 +219,7 @@ export async function getClassificationTaxonomy(): Promise<
 
   const result: Record<string, Record<string, Set<string>>> = {}
   for (const r of all) {
-    if (!r.vertical) continue
+    if (!r.vertical || r.vertical === 'Out of Scope') continue
     if (!result[r.vertical]) result[r.vertical] = {}
     if (r.category) {
       if (!result[r.vertical][r.category]) result[r.vertical][r.category] = new Set()
@@ -250,10 +252,11 @@ export async function getMapPins(filters?: {
     .select(`
       id, name, address, lat, lng, state_abbr, state, county,
       crm_stage, review_status, website,
-      classification:business_classifications(
+      classification:business_classifications!inner(
         vertical, category, business_type, gbp_confidence
       )
     `)
+    .neq('business_classifications.vertical', 'Out of Scope')
     .not('lat', 'is', null)
     .not('lng', 'is', null)
     .limit(5000)
