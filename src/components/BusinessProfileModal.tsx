@@ -79,40 +79,40 @@ export default function BusinessProfileModal({ businessId, onClose }: Props) {
               const cls = Array.isArray(biz.classification) ? biz.classification[0] : biz.classification;
               if (!cls) return null;
               return (
-                <div className="rounded-lg bg-background-tertiary p-3 space-y-1">
-                  <div className="font-mono text-[10px] text-text-tertiary uppercase tracking-widest">Classification</div>
-                  {(cls as any).vertical && (
-                    <div className="text-sm text-foreground">
-                      {(cls as any).vertical}
-                      {(cls as any).category && <span className="text-muted-foreground"> › {(cls as any).category}</span>}
+                <>
+                  <div className="rounded-lg bg-background-tertiary p-3 space-y-1">
+                    <div className="font-mono text-[10px] text-text-tertiary uppercase tracking-widest">Classification</div>
+                    {(cls as any).vertical && (
+                      <div className="text-sm text-foreground">
+                        {(cls as any).vertical}
+                        {(cls as any).category && <span className="text-muted-foreground"> › {(cls as any).category}</span>}
+                      </div>
+                    )}
+                    {(cls as any).business_type && (
+                      <div className="text-sm text-foreground">{(cls as any).business_type}</div>
+                    )}
+                  </div>
+                  {(cls as any).business_description && (
+                    <div className="rounded-lg bg-background-tertiary p-3 space-y-1">
+                      <div className="font-mono text-[10px] text-text-tertiary uppercase tracking-widest">Description</div>
+                      <div className="text-sm text-foreground">{(cls as any).business_description}</div>
                     </div>
                   )}
-                  {(cls as any).business_type && (
-                    <div className="text-sm text-foreground">{(cls as any).business_type}</div>
+                  {(cls as any).services_offered && (
+                    <div className="rounded-lg bg-background-tertiary p-3 space-y-1">
+                      <div className="font-mono text-[10px] text-text-tertiary uppercase tracking-widest">Services Offered</div>
+                      <div className="text-sm text-foreground">{(cls as any).services_offered}</div>
+                    </div>
                   )}
-                </div>
+                  {(cls as any).industry_keywords && (
+                    <div className="rounded-lg bg-background-tertiary p-3 space-y-1">
+                      <div className="font-mono text-[10px] text-text-tertiary uppercase tracking-widest">Industry Keywords</div>
+                      <div className="text-sm text-foreground">{(cls as any).industry_keywords}</div>
+                    </div>
+                  )}
+                </>
               );
             })()}
-
-            {/* Classification details */}
-            {cls?.business_description && (
-              <div className="rounded-lg bg-background-tertiary p-3 space-y-1">
-                <div className="font-mono text-[10px] text-text-tertiary uppercase tracking-widest">Description</div>
-                <div className="text-sm text-foreground">{(cls as any).business_description}</div>
-              </div>
-            )}
-            {cls?.services_offered && (
-              <div className="rounded-lg bg-background-tertiary p-3 space-y-1">
-                <div className="font-mono text-[10px] text-text-tertiary uppercase tracking-widest">Services Offered</div>
-                <div className="text-sm text-foreground">{(cls as any).services_offered}</div>
-              </div>
-            )}
-            {cls?.industry_keywords && (
-              <div className="rounded-lg bg-background-tertiary p-3 space-y-1">
-                <div className="font-mono text-[10px] text-text-tertiary uppercase tracking-widest">Industry Keywords</div>
-                <div className="text-sm text-foreground">{(cls as any).industry_keywords}</div>
-              </div>
-            )}
 
             {/* SBA Loan */}
             {(() => {
