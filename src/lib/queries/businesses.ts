@@ -219,7 +219,7 @@ export async function getClassificationTaxonomy(): Promise<
 
   const result: Record<string, Record<string, Set<string>>> = {}
   for (const r of all) {
-    if (!r.vertical) continue
+    if (!r.vertical || r.vertical === 'Out of Scope') continue
     if (!result[r.vertical]) result[r.vertical] = {}
     if (r.category) {
       if (!result[r.vertical][r.category]) result[r.vertical][r.category] = new Set()
