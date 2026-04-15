@@ -98,23 +98,17 @@ export default function LibraryPage() {
     queryFn: () => getBusinesses({
       search: searchQuery || undefined,
       review_status: (filterReview as ReviewStatus) || undefined,
-      crm_stage: undefined,
+      vertical: filterVertical || undefined,
+      category: filterCategory || undefined,
+      business_type: filterBusinessType || undefined,
+      state_abbr: filterState || undefined,
+      county: filterCounty || undefined,
+      in_crm: filterInCrm === 'yes' ? true : filterInCrm === 'no' ? false : undefined,
       limit: 500,
     }),
   });
 
-  // Client-side filtering for fields not supported by getBusinesses
-  const filtered = businesses.filter((b: any) => {
-    const cls = Array.isArray(b.classification) ? b.classification[0] : b.classification;
-    if (filterVertical && cls?.vertical !== filterVertical) return false;
-    if (filterCategory && cls?.category !== filterCategory) return false;
-    if (filterBusinessType && cls?.business_type !== filterBusinessType) return false;
-    if (filterState && b.state_abbr !== filterState) return false;
-    if (filterCounty && b.county !== filterCounty) return false;
-    if (filterInCrm === 'yes' && !b.in_crm) return false;
-    if (filterInCrm === 'no' && b.in_crm) return false;
-    return true;
-  });
+  const filtered = businesses;
 
   if (error) {
     return (
