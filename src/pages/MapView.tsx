@@ -407,7 +407,7 @@ export default function MapView() {
     } finally {
       setLoading(false);
     }
-  }, [filterReview, filterState, filterCounty, filterVertical, filterCategory, filterBusinessType, filterSubType, filterInCrm]);
+  }, [filterReview, filterState, filterCounty, filterVertical, filterCategory, filterBusinessType, filterInCrm]);
 
   const onIdle = useCallback(() => {
     if (!mapRef.current) return;
