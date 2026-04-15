@@ -16,10 +16,11 @@ export async function getBusinesses(filters?: {
     .from('businesses')
     .select(`
       *,
-      classification:business_classifications(
+      classification:business_classifications!inner(
         vertical, category, business_type, gbp_confidence, sf_score
       )
     `)
+    .neq('business_classifications.vertical', 'Out of Scope')
     .order('last_activity_at', { ascending: false, nullsFirst: false })
 
   if (filters?.crm_stage)      query = query.eq('crm_stage', filters.crm_stage)
@@ -172,6 +173,7 @@ export async function getMapPinsInBounds(
   query = query
     .not('lat', 'is', null)
     .not('lng', 'is', null)
+    .neq('business_classifications.vertical', 'Out of Scope')
     .gte('lat', bounds.south)
     .lte('lat', bounds.north)
     .gte('lng', bounds.west)
@@ -250,10 +252,11 @@ export async function getMapPins(filters?: {
     .select(`
       id, name, address, lat, lng, state_abbr, state, county,
       crm_stage, review_status, website,
-      classification:business_classifications(
+      classification:business_classifications!inner(
         vertical, category, business_type, gbp_confidence
       )
     `)
+    .neq('business_classifications.vertical', 'Out of Scope')
     .not('lat', 'is', null)
     .not('lng', 'is', null)
     .limit(5000)
