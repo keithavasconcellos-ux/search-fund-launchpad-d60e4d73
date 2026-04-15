@@ -311,7 +311,7 @@ export default function MapView() {
   const [filterVertical, setFilterVertical] = useState<string>('');
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [filterBusinessType, setFilterBusinessType] = useState<string>('');
-  const [filterSubType, setFilterSubType] = useState<string>('');
+  
   const [filterInCrm, setFilterInCrm] = useState<'' | 'yes' | 'no'>('');
   const [pinCount, setPinCount] = useState<number>(0);
   const [addedToCrm, setAddedToCrm] = useState<Set<string>>(new Set());
@@ -397,7 +397,7 @@ export default function MapView() {
         vertical:       filterVertical || undefined,
         category:       filterCategory || undefined,
         business_type:  filterBusinessType || undefined,
-        primary_gbp_category: filterSubType || undefined,
+        
         in_crm:         filterInCrm === 'yes' ? true : filterInCrm === 'no' ? false : undefined,
       }, 500);
       setPins(data);
