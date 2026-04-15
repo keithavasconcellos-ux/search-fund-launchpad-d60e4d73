@@ -1,0 +1,4 @@
+pandas
+rapidfuzz
+supabase
+python-dotenv
