@@ -190,6 +190,9 @@ export type Database = {
           review_count: number | null
           review_status: string
           review_status_set_at: string | null
+          sba_loan_amount_bucket: string | null
+          sba_loan_approved: boolean | null
+          sba_loan_year: number | null
           state: string | null
           state_abbr: string | null
           updated_at: string
@@ -235,6 +238,9 @@ export type Database = {
           review_count?: number | null
           review_status?: string
           review_status_set_at?: string | null
+          sba_loan_amount_bucket?: string | null
+          sba_loan_approved?: boolean | null
+          sba_loan_year?: number | null
           state?: string | null
           state_abbr?: string | null
           updated_at?: string
@@ -280,6 +286,9 @@ export type Database = {
           review_count?: number | null
           review_status?: string
           review_status_set_at?: string | null
+          sba_loan_amount_bucket?: string | null
+          sba_loan_approved?: boolean | null
+          sba_loan_year?: number | null
           state?: string | null
           state_abbr?: string | null
           updated_at?: string
@@ -655,6 +664,62 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      sba_loans: {
+        Row: {
+          approval_date: string | null
+          borr_city: string | null
+          borr_name: string | null
+          borr_state: string | null
+          borr_zip: string | null
+          gross_approval: number | null
+          id: string
+          loan_status: string | null
+          match_confidence: number | null
+          match_method: string | null
+          matched_business_id: string | null
+          naics_code: string | null
+          program: string | null
+        }
+        Insert: {
+          approval_date?: string | null
+          borr_city?: string | null
+          borr_name?: string | null
+          borr_state?: string | null
+          borr_zip?: string | null
+          gross_approval?: number | null
+          id: string
+          loan_status?: string | null
+          match_confidence?: number | null
+          match_method?: string | null
+          matched_business_id?: string | null
+          naics_code?: string | null
+          program?: string | null
+        }
+        Update: {
+          approval_date?: string | null
+          borr_city?: string | null
+          borr_name?: string | null
+          borr_state?: string | null
+          borr_zip?: string | null
+          gross_approval?: number | null
+          id?: string
+          loan_status?: string | null
+          match_confidence?: number | null
+          match_method?: string | null
+          matched_business_id?: string | null
+          naics_code?: string | null
+          program?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sba_loans_matched_business_id_fkey"
+            columns: ["matched_business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scheduled_calls: {
         Row: {

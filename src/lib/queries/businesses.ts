@@ -45,7 +45,8 @@ export async function getBusinessById(id: string) {
       activities(*),
       email_threads(*),
       dd_documents(*),
-      dd_memos(*)
+      dd_memos(*),
+      sba_loans!sba_loans_matched_business_id_fkey(*)
     `)
     .eq('id', id)
     .order('created_at', { referencedTable: 'activities', ascending: false })
