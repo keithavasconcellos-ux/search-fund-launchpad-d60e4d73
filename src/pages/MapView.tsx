@@ -221,26 +221,21 @@ interface DrillDownProps {
   vertical: string
   category: string
   businessType: string
-  subType: string
   onVerticalChange: (v: string) => void
   onCategoryChange: (c: string) => void
   onBusinessTypeChange: (bt: string) => void
-  onSubTypeChange: (st: string) => void
 }
 
 function DrillDownFilter({
-  taxonomy, vertical, category, businessType, subType,
-  onVerticalChange, onCategoryChange, onBusinessTypeChange, onSubTypeChange,
+  taxonomy, vertical, category, businessType,
+  onVerticalChange, onCategoryChange, onBusinessTypeChange,
 }: DrillDownProps) {
-  const verticals = Object.keys(taxonomy).sort()
+  const verticals = Object.keys(taxonomy).filter(v => v !== 'Out of Scope').sort()
   const categories = vertical ? Object.keys(taxonomy[vertical] ?? {}).sort() : []
   const catData = vertical && category ? taxonomy[vertical]?.[category] : undefined
   const businessTypes = catData ? (Array.isArray(catData) ? catData as string[] : Object.keys(catData).sort()) : []
-  const subTypes = (!Array.isArray(catData) && vertical && category && businessType)
-    ? (catData?.[businessType] ?? [])
-    : []
 
-  const hasAnyFilter = !!(vertical || category || businessType || subType)
+  const hasAnyFilter = !!(vertical || category || businessType)
 
   return (
     <div>
@@ -250,7 +245,7 @@ function DrillDownFilter({
         </label>
         {hasAnyFilter && (
           <button
-            onClick={() => { onVerticalChange(''); onCategoryChange(''); onBusinessTypeChange(''); onSubTypeChange(''); }}
+            onClick={() => { onVerticalChange(''); onCategoryChange(''); onBusinessTypeChange(''); }}
             className="flex items-center gap-1 font-mono text-[10px] text-primary hover:text-primary/80 transition-colors"
           >
             <RotateCcw className="w-2.5 h-2.5" />Reset
@@ -264,7 +259,7 @@ function DrillDownFilter({
           label="Vertical"
           value={vertical}
           options={verticals}
-          onChange={v => { onVerticalChange(v); onCategoryChange(''); onBusinessTypeChange(''); onSubTypeChange(''); }}
+          onChange={v => { onVerticalChange(v); onCategoryChange(''); onBusinessTypeChange(''); }}
           placeholder="All Verticals"
         />
 
@@ -274,7 +269,7 @@ function DrillDownFilter({
             label="Category"
             value={category}
             options={categories}
-            onChange={c => { onCategoryChange(c); onBusinessTypeChange(''); onSubTypeChange(''); }}
+            onChange={c => { onCategoryChange(c); onBusinessTypeChange(''); }}
             disabled={!vertical}
             placeholder={vertical ? 'All Categories' : 'Select Vertical first'}
           />
@@ -286,21 +281,9 @@ function DrillDownFilter({
             label="Business Type"
             value={businessType}
             options={businessTypes}
-            onChange={bt => { onBusinessTypeChange(bt); onSubTypeChange(''); }}
+            onChange={bt => { onBusinessTypeChange(bt); }}
             disabled={!category}
             placeholder={category ? 'All Types' : 'Select Category first'}
-          />
-        </div>
-
-        {/* L4 — Sub-Type (primary_gbp_category) */}
-        <div className="ml-9 pl-3 border-l border-border/50">
-          <CascadingSelect
-            label="Sub-Type"
-            value={subType}
-            options={subTypes}
-            onChange={st => onSubTypeChange(st)}
-            disabled={!businessType}
-            placeholder={businessType ? 'All Sub-Types' : 'Select Business Type first'}
           />
         </div>
       </div>
@@ -308,7 +291,7 @@ function DrillDownFilter({
       {/* Active filter breadcrumb */}
       {hasAnyFilter && (
         <div className="mt-2 px-2 py-1.5 rounded-md bg-primary/5 border border-primary/20 text-[10px] font-mono text-primary/80 leading-relaxed">
-          {[vertical, category, businessType, subType].filter(Boolean).join(' › ')}
+          {[vertical, category, businessType].filter(Boolean).join(' › ')}
         </div>
       )}
     </div>
@@ -328,7 +311,7 @@ export default function MapView() {
   const [filterVertical, setFilterVertical] = useState<string>('');
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [filterBusinessType, setFilterBusinessType] = useState<string>('');
-  const [filterSubType, setFilterSubType] = useState<string>('');
+  
   const [filterInCrm, setFilterInCrm] = useState<'' | 'yes' | 'no'>('');
   const [pinCount, setPinCount] = useState<number>(0);
   const [addedToCrm, setAddedToCrm] = useState<Set<string>>(new Set());
@@ -414,7 +397,7 @@ export default function MapView() {
         vertical:       filterVertical || undefined,
         category:       filterCategory || undefined,
         business_type:  filterBusinessType || undefined,
-        primary_gbp_category: filterSubType || undefined,
+        
         in_crm:         filterInCrm === 'yes' ? true : filterInCrm === 'no' ? false : undefined,
       }, 500);
       setPins(data);
@@ -424,7 +407,7 @@ export default function MapView() {
     } finally {
       setLoading(false);
     }
-  }, [filterReview, filterState, filterCounty, filterVertical, filterCategory, filterBusinessType, filterSubType, filterInCrm]);
+  }, [filterReview, filterState, filterCounty, filterVertical, filterCategory, filterBusinessType, filterInCrm]);
 
   const onIdle = useCallback(() => {
     if (!mapRef.current) return;
@@ -440,7 +423,7 @@ export default function MapView() {
       lastBounds.current = null;
       fetchPinsForViewport(mapRef.current, true);
     }
-  }, [filterReview, filterState, filterCounty, filterVertical, filterCategory, filterBusinessType, filterSubType, filterInCrm, fetchPinsForViewport]);
+  }, [filterReview, filterState, filterCounty, filterVertical, filterCategory, filterBusinessType, filterInCrm, fetchPinsForViewport]);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
@@ -493,11 +476,9 @@ export default function MapView() {
                 vertical={filterVertical}
                 category={filterCategory}
                 businessType={filterBusinessType}
-                subType={filterSubType}
                 onVerticalChange={setFilterVertical}
                 onCategoryChange={setFilterCategory}
                 onBusinessTypeChange={setFilterBusinessType}
-                onSubTypeChange={setFilterSubType}
               />
             </div>
 
