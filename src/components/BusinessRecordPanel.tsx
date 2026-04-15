@@ -226,6 +226,19 @@ function OverviewTab({ biz, cls, onUpdate }: { biz: any; cls: any; onUpdate: () 
         label="Classification"
         value={cls ? [cls.vertical, cls.category, cls.business_type].filter(Boolean).join(' › ') : null}
       />
+      <DetailRow label="Description" value={cls?.business_description} />
+      <DetailRow label="Services" value={cls?.services_offered} />
+      <DetailRow label="Keywords" value={cls?.industry_keywords} />
+
+      {/* SBA Loan */}
+      {(() => {
+        const loans = biz.sba_loans ?? [];
+        if (loans.length === 0) return <DetailRow label="SBA Loan" value={null} />;
+        const loan = loans[0];
+        const amt = loan.gross_approval ? `$${Number(loan.gross_approval).toLocaleString()}` : '—';
+        const date = loan.approval_date ? new Date(loan.approval_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+        return <DetailRow label="SBA Loan" value={`${amt}${date ? ` · ${date}` : ''}`} />;
+      })()}
     </div>
   );
 }
