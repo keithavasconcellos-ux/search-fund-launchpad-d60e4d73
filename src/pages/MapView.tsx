@@ -423,7 +423,7 @@ export default function MapView() {
       lastBounds.current = null;
       fetchPinsForViewport(mapRef.current, true);
     }
-  }, [filterReview, filterState, filterCounty, filterVertical, filterCategory, filterBusinessType, filterSubType, filterInCrm, fetchPinsForViewport]);
+  }, [filterReview, filterState, filterCounty, filterVertical, filterCategory, filterBusinessType, filterInCrm, fetchPinsForViewport]);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
@@ -476,11 +476,9 @@ export default function MapView() {
                 vertical={filterVertical}
                 category={filterCategory}
                 businessType={filterBusinessType}
-                subType={filterSubType}
                 onVerticalChange={setFilterVertical}
                 onCategoryChange={setFilterCategory}
                 onBusinessTypeChange={setFilterBusinessType}
-                onSubTypeChange={setFilterSubType}
               />
             </div>
 
