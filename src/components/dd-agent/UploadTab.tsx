@@ -217,22 +217,24 @@ export function UploadTab({ onMemoCreated, onOpenMemo }: {
 
       {/* Area 3 — Business context */}
       <div className="space-y-4 mb-6">
-        <Field label="Linked Business" required>
-          {businesses.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic">No businesses in CRM — add one first.</p>
-          ) : (
-            <select
-              value={businessId}
-              onChange={(e) => setBusinessId(e.target.value)}
-              className="w-full bg-background-tertiary rounded-md px-3 py-2 text-sm text-foreground border border-border focus:outline-none focus:border-primary/50"
-            >
-              <option value="">Select…</option>
-              {businesses.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}{b.address ? ` — ${b.address.split(',')[1]?.trim() ?? ''}` : ''}</option>
-              ))}
-            </select>
-          )}
-        </Field>
+        {mode !== 'new_from_cim' && (
+          <Field label="Linked Business" required>
+            {businesses.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">No businesses in CRM — add one first.</p>
+            ) : (
+              <select
+                value={businessId}
+                onChange={(e) => setBusinessId(e.target.value)}
+                className="w-full bg-background-tertiary rounded-md px-3 py-2 text-sm text-foreground border border-border focus:outline-none focus:border-primary/50"
+              >
+                <option value="">Select…</option>
+                {businesses.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}{b.address ? ` — ${b.address.split(',')[1]?.trim() ?? ''}` : ''}</option>
+                ))}
+              </select>
+            )}
+          </Field>
+        )}
 
         {selectedBiz?.vertical && (
           <Field label="Vertical">
