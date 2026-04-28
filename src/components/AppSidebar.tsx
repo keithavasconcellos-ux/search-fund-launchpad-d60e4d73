@@ -24,8 +24,8 @@ export default function AppSidebar() {
     <aside className="fixed left-0 top-0 w-[240px] h-screen bg-background-secondary border-r border-border overflow-y-auto z-50 flex flex-col">
       {/* Logo */}
       <div className="px-5 pt-6 pb-5 border-b border-border">
-        <div className="font-display text-[22px] text-foreground tracking-tight">acquira</div>
-        <div className="font-mono text-[11px] text-text-tertiary uppercase tracking-widest mt-0.5">
+        <div className="font-display text-[22px] text-teal font-bold tracking-tight">acquira</div>
+        <div className="font-mono text-[9px] text-text-tertiary uppercase tracking-[2px] mt-0.5">
           Search Fund Tool
         </div>
       </div>
@@ -41,7 +41,7 @@ export default function AppSidebar() {
 
       {/* Nav */}
       <nav className="px-3 py-2 flex-1">
-        <div className="font-mono text-[10px] text-text-tertiary uppercase tracking-widest px-2 mb-2">
+        <div className="font-mono text-[9px] text-text-tertiary uppercase tracking-[2px] px-2 mb-2">
           Modules
         </div>
         {navItems.map((item) => {
@@ -50,10 +50,10 @@ export default function AppSidebar() {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-2.5 px-2.5 py-[7px] rounded-md text-[13px] transition-all mb-0.5 ${
+              className={`flex items-center gap-2.5 pl-2.5 pr-2.5 py-[7px] rounded-md text-[13px] transition-all mb-0.5 border-l-2 ${
                 isActive
-                  ? 'bg-primary/12 text-primary'
-                  : 'text-muted-foreground hover:bg-background-tertiary hover:text-foreground'
+                  ? 'border-teal bg-teal/[0.08] text-teal'
+                  : 'border-transparent text-text-secondary hover:bg-background-quaternary hover:text-foreground'
               }`}
             >
               <item.icon className="w-4 h-4" />
