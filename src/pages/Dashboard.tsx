@@ -265,10 +265,10 @@ export default function Dashboard() {
                     className="h-full rounded flex items-center px-2.5 transition-all duration-500"
                     style={{
                       width: `${f.width}%`,
-                      background: `linear-gradient(90deg, ${f.color}25, ${f.color}55)`,
+                      background: `linear-gradient(90deg, hsl(${f.hsl} / 0.18), hsl(${f.hsl} / 0.45))`,
                     }}
                   >
-                    <span className="font-mono text-[11px] font-medium" style={{ color: f.color }}>
+                    <span className="font-mono text-[11px] font-medium" style={{ color: `hsl(${f.hsl})` }}>
                       {f.count}
                     </span>
                   </div>
