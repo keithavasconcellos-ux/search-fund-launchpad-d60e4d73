@@ -193,6 +193,9 @@ export type Database = {
           sba_loan_amount_bucket: string | null
           sba_loan_approved: boolean | null
           sba_loan_year: number | null
+          sos_data: Json | null
+          sos_fetched_at: string | null
+          sos_state: string | null
           state: string | null
           state_abbr: string | null
           updated_at: string
@@ -241,6 +244,9 @@ export type Database = {
           sba_loan_amount_bucket?: string | null
           sba_loan_approved?: boolean | null
           sba_loan_year?: number | null
+          sos_data?: Json | null
+          sos_fetched_at?: string | null
+          sos_state?: string | null
           state?: string | null
           state_abbr?: string | null
           updated_at?: string
@@ -289,6 +295,9 @@ export type Database = {
           sba_loan_amount_bucket?: string | null
           sba_loan_approved?: boolean | null
           sba_loan_year?: number | null
+          sos_data?: Json | null
+          sos_fetched_at?: string | null
+          sos_state?: string | null
           state?: string | null
           state_abbr?: string | null
           updated_at?: string
