@@ -2,64 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 @layer base {
   :root {
-    --background: 215 50% 9%;
-    --background-secondary: 215 51% 12%;
-    --background-tertiary: 215 43% 15%;
-    --background-quaternary: 215 43% 17%;
-    --foreground: 215 42% 95%;
+    /* Backgrounds — deep navy stack */
+    --background:           210 56% 5%;    /* #060b12 — page background */
+    --background-secondary: 213 52% 8%;    /* #0a1220 — sidebar, panels */
+    --background-tertiary:  213 48% 11%;   /* #0e1928 — cards */
+    --background-quaternary:213 44% 14%;   /* #142030 — hover states, inputs */
 
-    --card: 215 43% 21%;
-    --card-foreground: 215 42% 95%;
+    /* Foreground */
+    --foreground:           210 60% 95%;   /* #e4edf8 — primary text */
 
-    --popover: 215 43% 17%;
-    --popover-foreground: 215 42% 95%;
+    /* Cards */
+    --card:                 213 48% 11%;   /* matches background-tertiary */
+    --card-foreground:      210 60% 95%;
 
-    --primary: 213 100% 59%;
-    --primary-foreground: 0 0% 100%;
+    /* Popovers */
+    --popover:              213 44% 14%;
+    --popover-foreground:   210 60% 95%;
 
-    --secondary: 215 43% 15%;
-    --secondary-foreground: 215 42% 95%;
+    /* Primary — teal (the main accent) */
+    --primary:              174 88% 45%;   /* #0fd4c0 */
+    --primary-foreground:   210 56% 5%;    /* dark bg — used for text on teal buttons */
 
-    --muted: 215 43% 17%;
-    --muted-foreground: 213 30% 65%;
+    /* Secondary */
+    --secondary:            213 48% 11%;
+    --secondary-foreground: 210 60% 95%;
 
-    --accent: 215 43% 15%;
-    --accent-foreground: 215 42% 95%;
+    /* Muted */
+    --muted:                213 44% 14%;
+    --muted-foreground:     213 28% 52%;   /* #6b899e — mid-tone text */
 
-    --destructive: 0 84% 60%;
+    /* Accent */
+    --accent:               213 44% 14%;
+    --accent-foreground:    210 60% 95%;
+
+    /* Semantic */
+    --destructive:          348 86% 62%;   /* #f04e6a — red */
     --destructive-foreground: 0 0% 100%;
+    --success:              162 68% 48%;   /* #22d3a0 — green */
+    --success-foreground:   0 0% 100%;
+    --warning:              37 90% 55%;    /* #f5a623 — amber */
+    --warning-foreground:   0 0% 0%;
 
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
+    /* Named colours used directly in components */
+    --teal:                 174 88% 45%;   /* #0fd4c0 */
+    --teal-secondary:       174 83% 35%;   /* #0aab9a — darker teal for hover */
+    --purple:               256 92% 73%;   /* #9d7afa */
+    --cyan:                 162 68% 48%;   /* #22d3a0 — same as success */
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 0%;
+    /* Borders */
+    --border:               213 48% 12%;   /* #112030 */
+    --input:                213 44% 18%;   /* #1a3048 — slightly lighter for inputs */
+    --ring:                 174 88% 45%;   /* teal focus ring */
 
-    --teal: 173 58% 39%;
-    --purple: 250 83% 76%;
-    --cyan: 188 85% 53%;
+    /* Text hierarchy */
+    --text-secondary:       213 28% 52%;   /* #6b899e */
+    --text-tertiary:        213 32% 28%;   /* #2e4460 — very muted */
 
-    --border: 215 20% 20%;
-    --input: 215 20% 20%;
-    --ring: 213 100% 59%;
+    /* Border radius */
+    --radius:               0.625rem;      /* 10px — slightly more rounded than before */
 
-    --radius: 0.5rem;
-
-    --text-secondary: 213 30% 65%;
-    --text-tertiary: 213 25% 40%;
-
-    --sidebar-background: 215 51% 12%;
-    --sidebar-foreground: 213 30% 65%;
-    --sidebar-primary: 213 100% 59%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 43% 15%;
-    --sidebar-accent-foreground: 215 42% 95%;
-    --sidebar-border: 215 20% 15%;
-    --sidebar-ring: 213 100% 59%;
+    /* Sidebar */
+    --sidebar-background:   213 52% 8%;
+    --sidebar-foreground:   213 28% 52%;
+    --sidebar-primary:      174 88% 45%;
+    --sidebar-primary-foreground: 210 56% 5%;
+    --sidebar-accent:       213 48% 11%;
+    --sidebar-accent-foreground: 210 60% 95%;
+    --sidebar-border:       213 48% 10%;
+    --sidebar-ring:         174 88% 45%;
   }
 }
 
@@ -78,6 +92,6 @@
     font-family: 'Instrument Serif', serif;
   }
   .font-mono-data {
-    font-family: 'DM Mono', monospace;
+    font-family: 'Geist Mono', monospace;
   }
 }
