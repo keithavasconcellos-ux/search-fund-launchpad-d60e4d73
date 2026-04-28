@@ -330,7 +330,11 @@ Deno.serve(async (req) => {
       deal_breaker_fired: !!sections?.deal_breaker_check?.fired,
       investment_thesis: extracted?.investment_thesis_paragraph ?? null,
       open_questions: extracted?.open_questions ?? [],
-      suggested_next_step: extracted?.suggested_next_step ?? null,
+      suggested_next_step: (() => {
+        const allowed = ["advance_to_mgmt_call", "request_financials", "request_customer_refs", "pass", "pending"];
+        const v = extracted?.suggested_next_step;
+        return allowed.includes(v) ? v : "pending";
+      })(),
       analysis_label: analysis_label ?? "Initial DD",
       input_type,
       input_page_count: page_count ?? null,
