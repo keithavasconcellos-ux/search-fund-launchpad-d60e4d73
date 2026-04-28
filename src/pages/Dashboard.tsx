@@ -1,6 +1,18 @@
 import { ArrowUp, Mail, MessageSquare, FileText, RefreshCw, Plus, Search, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { getPipelineFunnelCounts } from '@/lib/queries/dashboard';
+import { CRM_STAGE_LABELS, type CrmStage } from '@/types/acquira';
+
+const FUNNEL_STAGE_META: { stage: CrmStage; color: string }[] = [
+  { stage: 'identified',   color: 'hsl(var(--primary))' },
+  { stage: 'contacted',    color: 'hsl(var(--primary))' },
+  { stage: 'engaged',      color: 'hsl(var(--purple))' },
+  { stage: 'nda_signed',   color: 'hsl(var(--warning))' },
+  { stage: 'cim_received', color: 'hsl(var(--destructive))' },
+  { stage: 'active_loi',   color: 'hsl(var(--destructive))' },
+];
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Dummy data (placeholder until wired to Supabase)
@@ -20,14 +32,7 @@ const KPIS_BOTTOM = [
   { label: 'Letters in Queue', value: '47', sub: 'Ready to review & send', tone: 'warn' as const, accent: 'warning' },
 ];
 
-const FUNNEL = [
-  { label: 'Identified',   count: 62, width: 100, color: 'hsl(var(--primary))' },
-  { label: 'Contacted',    count: 45, width: 72,  color: 'hsl(var(--primary))' },
-  { label: 'Engaged',      count: 18, width: 29,  color: 'hsl(var(--purple))' },
-  { label: 'NDA Signed',   count: 8,  width: 13,  color: 'hsl(var(--warning))' },
-  { label: 'CIM Received', count: 5,  width: 8,   color: 'hsl(var(--destructive))' },
-  { label: 'Active LOI',   count: 3,  width: 5,   color: 'hsl(var(--destructive))' },
-];
+
 
 const ACTIVITY = [
   { icon: MessageSquare, tone: 'success', html: <><strong>Northeast Electrical</strong> replied — Positive</>, time: 'Today, 8:42 AM' },
@@ -175,6 +180,26 @@ export default function Dashboard() {
   const today = format(new Date(), 'EEEE, d MMMM yyyy');
   const refreshed = format(new Date(), 'h:mm a');
 
+  const { data: funnelCounts = {} } = useQuery({
+    queryKey: ['pipeline-funnel'],
+    queryFn: getPipelineFunnelCounts,
+    refetchInterval: 60_000,
+  });
+
+  const maxFunnel = Math.max(1, ...FUNNEL_STAGE_META.map((m) => funnelCounts[m.stage] ?? 0));
+  const funnel = FUNNEL_STAGE_META.map((m) => ({
+    label: CRM_STAGE_LABELS[m.stage],
+    count: funnelCounts[m.stage] ?? 0,
+    width: ((funnelCounts[m.stage] ?? 0) / maxFunnel) * 100,
+    color: m.color,
+  }));
+
+  const conv = (from: CrmStage, to: CrmStage) => {
+    const a = funnelCounts[from] ?? 0;
+    const b = funnelCounts[to] ?? 0;
+    return a > 0 ? `${Math.round((b / a) * 100)}%` : '—';
+  };
+
   return (
     <div className="px-10 pt-9 pb-16 max-w-[1400px]">
       {/* Header */}
@@ -227,7 +252,7 @@ export default function Dashboard() {
           </CardLabel>
 
           <div className="space-y-2.5">
-            {FUNNEL.map((f) => (
+            {funnel.map((f) => (
               <div key={f.label} className="flex items-center gap-3">
                 <div className="font-mono text-[10px] text-muted-foreground w-24 text-right shrink-0">{f.label}</div>
                 <div className="flex-1 h-6 bg-background-tertiary rounded overflow-hidden">
@@ -249,9 +274,9 @@ export default function Dashboard() {
 
           <div className="mt-4 pt-3.5 border-t border-border grid grid-cols-3 gap-2">
             {[
-              { l: 'Contacted→Engaged', v: '40%' },
-              { l: 'Engaged→NDA',       v: '44%' },
-              { l: 'NDA→CIM',           v: '63%' },
+              { l: 'Contacted→Engaged', v: conv('contacted', 'engaged') },
+              { l: 'Engaged→NDA',       v: conv('engaged', 'nda_signed') },
+              { l: 'NDA→CIM',           v: conv('nda_signed', 'cim_received') },
             ].map((m) => (
               <div key={m.l}>
                 <div className="font-mono text-[9px] text-text-tertiary uppercase tracking-wider mb-1">{m.l}</div>
