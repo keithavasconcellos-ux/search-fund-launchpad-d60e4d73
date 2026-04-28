@@ -1,4 +1,4 @@
-import { ArrowUp, Mail, MessageSquare, FileText, RefreshCw, Plus, Search, Send } from 'lucide-react';
+import { ArrowUp, Mail, MessageSquare, FileText, RefreshCw, Search, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
