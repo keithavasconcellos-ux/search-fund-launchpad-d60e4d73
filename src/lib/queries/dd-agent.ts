@@ -122,6 +122,38 @@ export async function deleteMemo(id: string) {
   if (error) throw error;
 }
 
+export async function extractCimBusiness(args: {
+  name: string;
+  file: File;
+}): Promise<{ business: { id: string; name: string }; cim_text_dump: string; confidence: string }> {
+  const file_base64 = await fileToBase64(args.file);
+  const { data, error } = await supabase.functions.invoke('extract-cim-business', {
+    body: {
+      name: args.name,
+      file_base64,
+      file_mime: args.file.type || 'application/pdf',
+      file_name: args.file.name,
+    },
+  });
+  if (error) throw error;
+  if ((data as any)?.error) throw new Error((data as any).error);
+  return data as any;
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // strip data:...;base64, prefix
+      const comma = result.indexOf(',');
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
 export async function generateMemo(args: {
   business_id: string;
   input_type: 'cim' | 'call_notes' | 'name_only';

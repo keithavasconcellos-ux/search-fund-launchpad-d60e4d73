@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Upload, FileText, X, Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Upload, FileText, X, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   getCrmBusinessesForLinking,
   getMemosForBusiness,
   generateMemo,
+  extractCimBusiness,
   type DDMemo,
 } from '@/lib/queries/dd-agent';
 import { ScorecardDots } from './AnacapaScorecard';
 
-type Mode = 'cim' | 'call_notes' | 'name_only';
+type Mode = 'cim' | 'call_notes' | 'name_only' | 'new_from_cim';
 
 export function UploadTab({ onMemoCreated, onOpenMemo }: {
   onMemoCreated: (memo: DDMemo) => void;
@@ -25,7 +27,10 @@ export function UploadTab({ onMemoCreated, onOpenMemo }: {
   const [notes, setNotes] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generatingStage, setGeneratingStage] = useState<string>('');
+  const [newBusinessName, setNewBusinessName] = useState('');
   const [priorMemos, setPriorMemos] = useState<DDMemo[]>([]);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     getCrmBusinessesForLinking()
@@ -58,20 +63,41 @@ export function UploadTab({ onMemoCreated, onOpenMemo }: {
 
   const wordCount = notes.trim().split(/\s+/).filter(Boolean).length;
   const canGenerate =
-    !!businessId &&
     !generating &&
-    (mode === 'name_only' ||
-      (mode === 'cim' && !!file) ||
-      (mode === 'call_notes' && wordCount >= 50));
+    ((mode === 'new_from_cim' && !!file && !!newBusinessName.trim()) ||
+      (!!businessId &&
+        (mode === 'name_only' ||
+          (mode === 'cim' && !!file) ||
+          (mode === 'call_notes' && wordCount >= 50))));
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
     setGenerating(true);
     try {
+      let targetBusinessId = businessId;
+      let cimText = fileText;
+
+      if (mode === 'new_from_cim' && file) {
+        setGeneratingStage('Reading CIM and creating business…');
+        const result = await extractCimBusiness({ name: newBusinessName.trim(), file });
+        targetBusinessId = result.business.id;
+        cimText = result.cim_text_dump || fileText;
+        toast.success(`Added "${result.business.name}" to CRM`);
+        // Refresh CRM caches
+        queryClient.invalidateQueries({ queryKey: ['businesses'] });
+        queryClient.invalidateQueries({ queryKey: ['crm-businesses'] });
+      }
+
+      setGeneratingStage('Generating DD memo…');
       const memo = await generateMemo({
-        business_id: businessId,
-        input_type: mode,
-        input_text: mode === 'cim' ? `[Filename: ${file?.name}]\n\n${fileText}` : mode === 'call_notes' ? notes : undefined,
+        business_id: targetBusinessId,
+        input_type: mode === 'new_from_cim' ? 'cim' : mode,
+        input_text:
+          mode === 'cim' || mode === 'new_from_cim'
+            ? `[Filename: ${file?.name}]\n\n${cimText}`
+            : mode === 'call_notes'
+            ? notes
+            : undefined,
         analysis_label: analysisLabel || 'Initial DD',
         additional_context: additionalContext || undefined,
         page_count: undefined,
@@ -82,14 +108,16 @@ export function UploadTab({ onMemoCreated, onOpenMemo }: {
       toast.error(e.message ?? 'Generation failed');
     } finally {
       setGenerating(false);
+      setGeneratingStage('');
     }
   };
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
       {/* Mode toggle */}
-      <div className="grid grid-cols-3 bg-background-tertiary rounded-md p-1 mb-6">
+      <div className="grid grid-cols-4 bg-background-tertiary rounded-md p-1 mb-6 gap-0.5">
         {([
+          { v: 'new_from_cim', l: 'New + CIM' },
           { v: 'cim', l: 'CIM Upload' },
           { v: 'call_notes', l: 'Call Notes' },
           { v: 'name_only', l: 'Name Only' },
@@ -97,7 +125,7 @@ export function UploadTab({ onMemoCreated, onOpenMemo }: {
           <button
             key={opt.v}
             onClick={() => setMode(opt.v)}
-            className={`py-2 text-sm font-medium rounded transition-colors ${
+            className={`py-2 text-xs font-medium rounded transition-colors ${
               mode === opt.v ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -106,8 +134,30 @@ export function UploadTab({ onMemoCreated, onOpenMemo }: {
         ))}
       </div>
 
+      {/* New Business + CIM mode: name input on top */}
+      {mode === 'new_from_cim' && (
+        <div className="mb-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
+          <div className="flex items-start gap-2 mb-3">
+            <Sparkles className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-foreground/80 leading-relaxed">
+              Enter the business name and drop the CIM. The AI will read the document, extract all
+              business details (revenue, employees, location, vertical…), add it to your CRM, then
+              generate the DD memo.
+            </p>
+          </div>
+          <Field label="Business Name" required>
+            <input
+              value={newBusinessName}
+              onChange={(e) => setNewBusinessName(e.target.value)}
+              placeholder="e.g. Acme Plumbing Services LLC"
+              className="w-full bg-background-tertiary rounded-md px-3 py-2 text-sm text-foreground border border-border focus:outline-none focus:border-primary/50"
+            />
+          </Field>
+        </div>
+      )}
+
       {/* Area 2 — Document input */}
-      {mode === 'cim' && (
+      {(mode === 'cim' || mode === 'new_from_cim') && (
         <div className="mb-6">
           {!file ? (
             <div
@@ -167,22 +217,24 @@ export function UploadTab({ onMemoCreated, onOpenMemo }: {
 
       {/* Area 3 — Business context */}
       <div className="space-y-4 mb-6">
-        <Field label="Linked Business" required>
-          {businesses.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic">No businesses in CRM — add one first.</p>
-          ) : (
-            <select
-              value={businessId}
-              onChange={(e) => setBusinessId(e.target.value)}
-              className="w-full bg-background-tertiary rounded-md px-3 py-2 text-sm text-foreground border border-border focus:outline-none focus:border-primary/50"
-            >
-              <option value="">Select…</option>
-              {businesses.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}{b.address ? ` — ${b.address.split(',')[1]?.trim() ?? ''}` : ''}</option>
-              ))}
-            </select>
-          )}
-        </Field>
+        {mode !== 'new_from_cim' && (
+          <Field label="Linked Business" required>
+            {businesses.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">No businesses in CRM — add one first.</p>
+            ) : (
+              <select
+                value={businessId}
+                onChange={(e) => setBusinessId(e.target.value)}
+                className="w-full bg-background-tertiary rounded-md px-3 py-2 text-sm text-foreground border border-border focus:outline-none focus:border-primary/50"
+              >
+                <option value="">Select…</option>
+                {businesses.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}{b.address ? ` — ${b.address.split(',')[1]?.trim() ?? ''}` : ''}</option>
+                ))}
+              </select>
+            )}
+          </Field>
+        )}
 
         {selectedBiz?.vertical && (
           <Field label="Vertical">
@@ -215,10 +267,12 @@ export function UploadTab({ onMemoCreated, onOpenMemo }: {
         disabled={!canGenerate}
         className="w-full py-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Analysing…</> : 'Generate Memo'}
+        {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> {generatingStage || 'Analysing…'}</> : mode === 'new_from_cim' ? 'Add to CRM & Generate Memo' : 'Generate Memo'}
       </button>
       {generating && (
-        <p className="text-center text-xs text-text-tertiary mt-2 italic">This usually takes 20–40 seconds</p>
+        <p className="text-center text-xs text-text-tertiary mt-2 italic">
+          {mode === 'new_from_cim' ? 'CIM extraction + memo generation usually takes 40–90 seconds' : 'This usually takes 20–40 seconds'}
+        </p>
       )}
 
       {/* Area 5 — Prior analyses */}
