@@ -10,7 +10,7 @@ import { formatRevenue } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { CrmStage, ReviewStatus } from '@/types/acquira';
-import { fetchSosData, type SosData } from '@/lib/queries/sos-lookup';
+import { fetchSosData, parseCityFromAddress, type SosData } from '@/lib/queries/sos-lookup';
 
 type Tab = 'overview' | 'contacts' | 'notes' | 'docs' | 'cim' | 'sos';
 
@@ -708,11 +708,12 @@ function SosTab({ biz, onUpdate }: { biz: any; onUpdate: () => void }) {
   const handleFetch = async () => {
     setLoading(true);
     try {
+      const city = parseCityFromAddress(biz.address);
       const result = await fetchSosData({
         id: biz.id,
         name: biz.name,
         state_abbr: stateAbbr,
-        city: null,
+        city,
       });
       if (result) {
         toast.success('SOS data fetched successfully');

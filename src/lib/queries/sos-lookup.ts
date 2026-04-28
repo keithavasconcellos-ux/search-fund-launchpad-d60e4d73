@@ -23,6 +23,32 @@ interface BizParams {
   city?: string | null;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+// Normalize a string for comparison — strip punctuation, lower, collapse spaces.
+function normalize(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Parse the city out of a typical Google address string:
+ * "123 Main St, Stamford, CT 06902"  →  "Stamford"
+ * "456 Oak Ave, Greenwich, CT 06831" →  "Greenwich"
+ * Falls back to null if the pattern can't be detected.
+ */
+function parseCityFromAddress(address: string | null | undefined): string | null {
+  if (!address) return null;
+  // Split on commas, find the segment just before the "ST XXXXX" or "ST" segment
+  const parts = address.split(',').map(p => p.trim());
+  if (parts.length < 3) return null;
+  // Last part is usually "CT 06902" or just "CT"
+  // Second-to-last is the city
+  const cityCandidate = parts[parts.length - 2];
+  // Sanity-check: shouldn't be a zip or 2-letter state alone
+  if (/^\d{5}/.test(cityCandidate) || /^[A-Z]{2}$/.test(cityCandidate)) return null;
+  return cityCandidate;
+}
+
 // ─── CT — Socrata API ─────────────────────────────────────────────────────────
 // CT publishes the full Business Registry on data.ct.gov as a free, nightly-
 // updated Socrata dataset. No auth required (app token reduces throttling).
@@ -37,33 +63,60 @@ const CT_MASTER_ID = 'n7gp-d28j';
 const CT_PRINCIPALS_ID = 'ka36-64k6';
 const CT_AGENTS_ID = 'qh2m-n44y';
 
-// Normalize a business name for comparison — strip punctuation, lower, trim.
-function normalizeName(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
-}
-
 async function fetchCtData(biz: BizParams): Promise<SosData | null> {
-  // Step 1: search Business Master by name (full-text search via $q)
-  const nameEncoded = encodeURIComponent(`"${biz.name}"`);
-  const masterUrl =
-    `${CT_BASE}/${CT_MASTER_ID}.json?$q=${nameEncoded}&$limit=10`;
+  const city = biz.city ? biz.city : null;
+
+  // Step 1: search Business Master by name + optional city filter
+  // Socrata $q does full-text search; business_city equality filter narrows results.
+  let masterUrl = `${CT_BASE}/${CT_MASTER_ID}.json?$q=${encodeURIComponent(biz.name)}&$limit=20`;
+  if (city) {
+    // Add a city filter — Socrata WHERE clause; UPPER() for case-insensitive match
+    masterUrl += `&$where=${encodeURIComponent(`upper(business_city)='${city.toUpperCase()}'`)}`;
+  }
 
   const masterRes = await fetch(masterUrl);
   if (!masterRes.ok) throw new Error(`CT Socrata error: ${masterRes.status}`);
-  const masterRows: any[] = await masterRes.json();
+  let masterRows: any[] = await masterRes.json();
+
+  // If city filter returned nothing, fall back without city (maybe address mismatch)
+  if (masterRows.length === 0 && city) {
+    const fallbackUrl = `${CT_BASE}/${CT_MASTER_ID}.json?$q=${encodeURIComponent(biz.name)}&$limit=20`;
+    const fallbackRes = await fetch(fallbackUrl);
+    if (fallbackRes.ok) masterRows = await fallbackRes.json();
+  }
 
   if (masterRows.length === 0) return null;
 
-  // Pick best match by normalized name similarity
-  const target = normalizeName(biz.name);
-  const best = masterRows
-    .map(r => ({ ...r, _score: normalizeName(r.business_name ?? '').includes(target) ? 1 : 0 }))
-    .sort((a, b) => b._score - a._score)[0];
+  // Step 2: score candidates — name similarity + city match bonus
+  const targetName = normalize(biz.name);
+  const targetCity = city ? normalize(city) : null;
 
+  const scored = masterRows.map(r => {
+    const rowName = normalize(r.business_name ?? '');
+    const rowCity = normalize(r.business_city ?? '');
+
+    // Name score: exact after normalization = 3, contains target = 2, target contains row = 1, else 0
+    let nameScore = 0;
+    if (rowName === targetName) nameScore = 3;
+    else if (rowName.includes(targetName)) nameScore = 2;
+    else if (targetName.includes(rowName)) nameScore = 1;
+
+    // City score: exact city match = 2, else 0
+    let cityScore = 0;
+    if (targetCity && rowCity === targetCity) cityScore = 2;
+
+    return { ...r, _score: nameScore + cityScore };
+  });
+
+  // Must have at least some name similarity
+  const candidates = scored.filter(r => r._score > 0).sort((a, b) => b._score - a._score);
+  if (candidates.length === 0) return null;
+
+  const best = candidates[0];
   const accountId: string | undefined = best.account_id ?? best.id;
   if (!accountId) return null;
 
-  // Step 2: fetch principals (officers/directors/members) for this account
+  // Step 3: fetch principals (officers/directors/members) for this account
   let officers: { name: string; title: string }[] = [];
   try {
     const princUrl =
@@ -78,7 +131,7 @@ async function fetchCtData(biz: BizParams): Promise<SosData | null> {
     }
   } catch { /* non-fatal */ }
 
-  // Step 3: fetch registered agent
+  // Step 4: fetch registered agent
   let registeredAgent: string | null = null;
   try {
     const agentUrl =
@@ -97,7 +150,7 @@ async function fetchCtData(biz: BizParams): Promise<SosData | null> {
     }
   } catch { /* non-fatal */ }
 
-  // Step 4: assemble DBA names from Name Change History if business_name differs
+  // Step 5: DBA names
   const dbaNames: string[] = [];
   if (best.dba_name) dbaNames.push(best.dba_name);
 
@@ -155,3 +208,6 @@ export async function fetchSosData(biz: BizParams): Promise<SosData | null> {
 
   return result;
 }
+
+// Export city parser so SosTab can use it without duplicating logic
+export { parseCityFromAddress };
