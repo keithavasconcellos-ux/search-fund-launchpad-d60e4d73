@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Star, ExternalLink, Plus, Upload, Download, Pencil, Check, Trash2 } from 'lucide-react';
+import { X, Star, ExternalLink, Plus, Upload, Download, Pencil, Check, Trash2, Building2, RefreshCw, AlertCircle } from 'lucide-react';
 import { getBusinessById } from '@/lib/queries/businesses';
 import { addToCrm, removeFromCrm } from '@/lib/queries/crm-actions';
 import { addNote } from '@/lib/queries/businesses';
@@ -10,8 +10,9 @@ import { formatRevenue } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { CrmStage, ReviewStatus } from '@/types/acquira';
+import { fetchSosData, type SosData } from '@/lib/queries/sos-lookup';
 
-type Tab = 'overview' | 'contacts' | 'notes' | 'docs' | 'cim';
+type Tab = 'overview' | 'contacts' | 'notes' | 'docs' | 'cim' | 'sos';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
@@ -19,6 +20,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'notes', label: 'Notes' },
   { key: 'docs', label: 'Docs' },
   { key: 'cim', label: 'CIM' },
+  { key: 'sos', label: 'SOS' },
 ];
 
 const CONFIDENCE_OPTIONS = ['High', 'Medium', 'Low', 'Unknown'];
@@ -150,6 +152,7 @@ export default function BusinessRecordPanel({ businessId, onClose }: Props) {
               {activeTab === 'notes' && <NotesTab biz={biz} onUpdate={invalidateAll} />}
               {activeTab === 'docs' && <DocsTab biz={biz} onUpdate={invalidateAll} />}
               {activeTab === 'cim' && <CimTab biz={biz} onUpdate={invalidateAll} />}
+              {activeTab === 'sos' && <SosTab biz={biz} onUpdate={invalidateAll} />}
             </div>
           </>
         )}
@@ -679,6 +682,193 @@ function EmptyState({ text }: { text: string }) {
   return (
     <div className="text-center py-12">
       <span className="font-mono text-xs text-text-tertiary">{text}</span>
+    </div>
+  );
+}
+
+/* ─── SOS Tab ─── */
+function SosTab({ biz, onUpdate }: { biz: any; onUpdate: () => void }) {
+  const [loading, setLoading] = useState(false);
+
+  const sosData: SosData | null = biz.sos_data ?? null;
+  const fetchedAt: string | null = biz.sos_fetched_at ?? null;
+  const stateAbbr: string | null = biz.state_abbr ?? null;
+
+  // States supported in Phase 1 (CT direct API)
+  const CT_STATES = ['CT'];
+  // States that will be supported in Phase 2 (Edge Function)
+  const EDGE_STATES = ['MA', 'RI'];
+  // States with deep links only (Phase 3)
+  const DEEPLINK_STATES = ['NH', 'VT'];
+
+  const isSupported = stateAbbr && [...CT_STATES, ...EDGE_STATES].includes(stateAbbr.toUpperCase());
+  const isDeepLinkOnly = stateAbbr && DEEPLINK_STATES.includes(stateAbbr.toUpperCase());
+  const isUnknownState = !stateAbbr || (!isSupported && !isDeepLinkOnly);
+
+  const handleFetch = async () => {
+    setLoading(true);
+    try {
+      const result = await fetchSosData({
+        id: biz.id,
+        name: biz.name,
+        state_abbr: stateAbbr,
+        city: null,
+      });
+      if (result) {
+        toast.success('SOS data fetched successfully');
+        onUpdate();
+      } else {
+        toast.warning('No matching record found in state registry');
+      }
+    } catch (e: any) {
+      toast.error(`SOS lookup failed: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stateLabel = stateAbbr?.toUpperCase() ?? 'Unknown';
+
+  return (
+    <div className="p-6 space-y-5">
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium text-foreground">Secretary of State Registry</span>
+          {stateAbbr && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-primary/15 text-primary">
+              {stateLabel}
+            </span>
+          )}
+        </div>
+        {fetchedAt && (
+          <span className="text-[10px] font-mono text-text-tertiary">
+            {new Date(fetchedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </span>
+        )}
+      </div>
+
+      {/* State not supported yet */}
+      {isUnknownState && (
+        <div className="rounded-lg bg-background-tertiary border border-border p-4 flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+          <div>
+            <div className="text-sm text-foreground font-medium mb-0.5">State not detected</div>
+            <div className="text-xs text-muted-foreground">
+              This business does not have a state code on record. SOS lookup is available for CT, MA, RI, NH, and VT.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Phase 3 deep-link states — coming soon notice */}
+      {isDeepLinkOnly && (
+        <div className="rounded-lg bg-background-tertiary border border-border p-4 flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 text-warning mt-0.5 shrink-0" />
+          <div>
+            <div className="text-sm text-foreground font-medium mb-0.5">{stateLabel} — Portal link coming soon</div>
+            <div className="text-xs text-muted-foreground">
+              {stateLabel} uses a JavaScript-rendered portal. Direct lookup support is in Phase 3.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MA/RI coming soon notice (Phase 2) */}
+      {stateAbbr && EDGE_STATES.includes(stateAbbr.toUpperCase()) && (
+        <div className="rounded-lg bg-background-tertiary border border-border p-4 flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 text-warning mt-0.5 shrink-0" />
+          <div>
+            <div className="text-sm text-foreground font-medium mb-0.5">{stateLabel} — Phase 2 (coming next)</div>
+            <div className="text-xs text-muted-foreground">
+              {stateLabel} lookup via server-side scraper is implemented in Phase 2.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fetch button (CT supported in Phase 1) */}
+      {stateAbbr && CT_STATES.includes(stateAbbr.toUpperCase()) && (
+        <button
+          onClick={handleFetch}
+          disabled={loading}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-60 transition-colors"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          {loading ? 'Fetching from CT registry…' : sosData ? 'Re-fetch SOS Data' : 'Fetch SOS Data'}
+        </button>
+      )}
+
+      {/* Cached data display */}
+      {sosData && (
+        <div className="divide-y divide-border rounded-lg border border-border overflow-hidden">
+          <SosRow label="Entity Type" value={sosData.entity_type} />
+          <SosRow label="Status" value={
+            sosData.status ? (
+              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${
+                sosData.status.toLowerCase().includes('active')
+                  ? 'bg-success/20 text-success'
+                  : 'bg-destructive/15 text-destructive'
+              }`}>
+                {sosData.status}
+              </span>
+            ) : null
+          } />
+          <SosRow label="Formed" value={
+            sosData.formation_date
+              ? new Date(sosData.formation_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : null
+          } />
+          <SosRow label="Reg. Agent" value={sosData.registered_agent} />
+          <SosRow label="Address" value={sosData.principal_address} />
+          <SosRow label="NAICS" value={sosData.naics_code} />
+          {sosData.dba_names.length > 0 && (
+            <SosRow label="DBA" value={sosData.dba_names.join(', ')} />
+          )}
+          {sosData.officers.length > 0 && (
+            <div className="px-4 py-3">
+              <span className="font-mono text-xs text-muted-foreground block mb-2">Officers</span>
+              <div className="space-y-1">
+                {sosData.officers.map((o, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-sm text-foreground">{o.name}</span>
+                    {o.title && (
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">{o.title}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {sosData.source_url && (
+            <div className="px-4 py-3">
+              <a
+                href={sosData.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                View in {sosData.state} Registry <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* No data yet for supported state */}
+      {isSupported && stateAbbr && CT_STATES.includes(stateAbbr.toUpperCase()) && !sosData && !loading && (
+        <EmptyState text="No SOS data fetched yet — click the button above" />
+      )}
+    </div>
+  );
+}
+
+function SosRow({ label, value }: { label: string; value: React.ReactNode | string | null }) {
+  return (
+    <div className="flex items-start px-4 py-3">
+      <span className="w-28 shrink-0 font-mono text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm text-foreground">{value ?? '—'}</span>
     </div>
   );
 }
