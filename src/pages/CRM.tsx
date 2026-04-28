@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Plus, LayoutGrid, Table, Clock } from 'lucide-react';
+import { LayoutGrid, Table, Clock } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import { updateCrmStage } from '@/lib/queries/businesses';
 import { supabase } from '@/integrations/supabase/client';
 import { StageBadge } from '@/components/StatusBadge';
 import BusinessRecordPanel from '@/components/BusinessRecordPanel';
+import AddBusinessDialog from '@/components/crm/AddBusinessDialog';
 import { formatRevenue } from '@/lib/utils';
 import { CRM_STAGES, CRM_STAGE_LABELS } from '@/types/acquira';
 import type { CrmStage } from '@/types/acquira';
@@ -97,10 +98,7 @@ export default function CRM() {
               </button>
             ))}
           </div>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-            <Plus className="w-3.5 h-3.5" />
-            Add Deal
-          </button>
+          <AddBusinessDialog />
         </div>
       </div>
 
