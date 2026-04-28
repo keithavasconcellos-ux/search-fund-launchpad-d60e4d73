@@ -1,11 +1,11 @@
 import { supabase } from '../supabase'
 
-// Pipeline funnel counts — one query, grouped by stage
+// Pipeline funnel counts — businesses in the CRM (matches /crm page)
 export async function getPipelineFunnelCounts() {
   const { data, error } = await supabase
     .from('businesses')
-    .select('crm_stage, classification:business_classifications!inner(vertical)')
-    .neq('business_classifications.vertical', 'Out of Scope')
+    .select('crm_stage')
+    .eq('in_crm', true)
 
   if (error) throw error
 
