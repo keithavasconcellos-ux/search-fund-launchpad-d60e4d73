@@ -198,6 +198,58 @@ export default function ComposeTab() {
 
   const comms = selectedBiz ? getMockComms(selectedBiz.id, selectedBiz.name) : null
   const daysSinceContact = comms?.lastContact ? daysSince(comms.lastContact) : null
+  const hasPriorContact = !!comms && comms.threadSnippets.length > 0
+
+  // Templates available for outreach generation
+  const { data: templates = [] } = useQuery({
+    queryKey: ['email-templates-active'],
+    queryFn: getEmailTemplates,
+  })
+  const activeTemplates = useMemo(
+    () => (templates as any[]).filter(t => t.is_active),
+    [templates],
+  )
+
+  // Reset generated draft when switching business
+  useEffect(() => {
+    setSelectedTemplateId('')
+    setGeneratedSubject('')
+    setGeneratedBody('')
+  }, [selectedBizId])
+
+  const ownerContact = contacts.find((c: any) => c.is_owner) ?? contacts[0]
+
+  const generateFromTemplate = async () => {
+    const tmpl = activeTemplates.find((t: any) => t.id === selectedTemplateId)
+    if (!tmpl || !selectedBiz) return
+    setIsGenerating(true)
+    try {
+      const aiBlocks: AiBlock[] = Array.isArray(tmpl.ai_blocks) ? tmpl.ai_blocks : []
+      const generated: Record<string, string> = {}
+      // Tier 1 = cold outreach (no prior contact path)
+      await Promise.all(aiBlocks.map(async (block) => {
+        const prompt = block.tier1_prompt
+        if (!prompt?.trim()) {
+          generated[block.id] = `[${block.label}]`
+          return
+        }
+        const { data, error } = await supabase.functions.invoke('generate-ai-block', {
+          body: { business_id: selectedBiz.id, block_prompt: prompt, tier: 1 },
+        })
+        if (error) throw error
+        generated[block.id] = data.text
+      }))
+      const mergeData = buildLiveData(selectedBiz, ownerContact?.name)
+      setGeneratedSubject(replaceMergeTags(tmpl.subject_template, mergeData))
+      setGeneratedBody(fillBodyPlain(tmpl.body_template, aiBlocks, generated, mergeData))
+      toast.success('Outreach draft generated')
+    } catch (e) {
+      console.error(e)
+      toast.error('Failed to generate outreach')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64 text-muted-foreground font-mono text-sm">Loading CRM…</div>
