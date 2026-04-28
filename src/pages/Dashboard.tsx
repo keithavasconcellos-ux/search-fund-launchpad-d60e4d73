@@ -180,6 +180,26 @@ export default function Dashboard() {
   const today = format(new Date(), 'EEEE, d MMMM yyyy');
   const refreshed = format(new Date(), 'h:mm a');
 
+  const { data: funnelCounts = {} } = useQuery({
+    queryKey: ['pipeline-funnel'],
+    queryFn: getPipelineFunnelCounts,
+    refetchInterval: 60_000,
+  });
+
+  const maxFunnel = Math.max(1, ...FUNNEL_STAGE_META.map((m) => funnelCounts[m.stage] ?? 0));
+  const funnel = FUNNEL_STAGE_META.map((m) => ({
+    label: CRM_STAGE_LABELS[m.stage],
+    count: funnelCounts[m.stage] ?? 0,
+    width: ((funnelCounts[m.stage] ?? 0) / maxFunnel) * 100,
+    color: m.color,
+  }));
+
+  const conv = (from: CrmStage, to: CrmStage) => {
+    const a = funnelCounts[from] ?? 0;
+    const b = funnelCounts[to] ?? 0;
+    return a > 0 ? `${Math.round((b / a) * 100)}%` : '—';
+  };
+
   return (
     <div className="px-10 pt-9 pb-16 max-w-[1400px]">
       {/* Header */}
