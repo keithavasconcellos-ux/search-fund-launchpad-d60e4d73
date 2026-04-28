@@ -187,12 +187,17 @@ export default function Dashboard() {
   });
 
   const maxFunnel = Math.max(1, ...FUNNEL_STAGE_META.map((m) => funnelCounts[m.stage] ?? 0));
-  const funnel = FUNNEL_STAGE_META.map((m) => ({
-    label: CRM_STAGE_LABELS[m.stage],
-    count: funnelCounts[m.stage] ?? 0,
-    width: ((funnelCounts[m.stage] ?? 0) / maxFunnel) * 100,
-    color: m.color,
-  }));
+  const funnel = FUNNEL_STAGE_META.map((m) => {
+    const count = funnelCounts[m.stage] ?? 0;
+    const pct = (count / maxFunnel) * 100;
+    return {
+      label: CRM_STAGE_LABELS[m.stage],
+      count,
+      // Keep a minimum so the count label stays readable on tiny bars
+      width: count > 0 ? Math.max(pct, 6) : 0,
+      color: m.color,
+    };
+  });
 
   const conv = (from: CrmStage, to: CrmStage) => {
     const a = funnelCounts[from] ?? 0;
