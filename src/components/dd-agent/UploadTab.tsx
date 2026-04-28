@@ -134,8 +134,30 @@ export function UploadTab({ onMemoCreated, onOpenMemo }: {
         ))}
       </div>
 
+      {/* New Business + CIM mode: name input on top */}
+      {mode === 'new_from_cim' && (
+        <div className="mb-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
+          <div className="flex items-start gap-2 mb-3">
+            <Sparkles className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-foreground/80 leading-relaxed">
+              Enter the business name and drop the CIM. The AI will read the document, extract all
+              business details (revenue, employees, location, vertical…), add it to your CRM, then
+              generate the DD memo.
+            </p>
+          </div>
+          <Field label="Business Name" required>
+            <input
+              value={newBusinessName}
+              onChange={(e) => setNewBusinessName(e.target.value)}
+              placeholder="e.g. Acme Plumbing Services LLC"
+              className="w-full bg-background-tertiary rounded-md px-3 py-2 text-sm text-foreground border border-border focus:outline-none focus:border-primary/50"
+            />
+          </Field>
+        </div>
+      )}
+
       {/* Area 2 — Document input */}
-      {mode === 'cim' && (
+      {(mode === 'cim' || mode === 'new_from_cim') && (
         <div className="mb-6">
           {!file ? (
             <div
