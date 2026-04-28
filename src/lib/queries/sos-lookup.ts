@@ -39,14 +39,24 @@ function normalize(s: string): string {
  */
 function parseCityFromAddress(address: string | null | undefined): string | null {
   if (!address) return null;
-  // Split on commas, find the segment just before the "ST XXXXX" or "ST" segment
-  const parts = address.split(',').map(p => p.trim());
+  // Google addresses can have trailing country: "123 Main St, Glastonbury, CT 06033, USA"
+  // Strip any trailing segment that is a country name or 2-letter code
+  let parts = address.split(',').map(p => p.trim()).filter(Boolean);
+  // Drop trailing 'USA' / 'US' / country segment
+  if (parts.length > 0) {
+    const last = parts[parts.length - 1];
+    if (/^(USA?|United States|Canada)$/i.test(last)) {
+      parts = parts.slice(0, -1);
+    }
+  }
+  // Need at least: [street, city, state+zip]
   if (parts.length < 3) return null;
-  // Last part is usually "CT 06902" or just "CT"
-  // Second-to-last is the city
+  // Second-to-last is the city; last is normally "CT 06033" or "CT"
   const cityCandidate = parts[parts.length - 2];
-  // Sanity-check: shouldn't be a zip or 2-letter state alone
+  // Sanity-check: shouldn't be a zip code or bare 2-letter state
   if (/^\d{5}/.test(cityCandidate) || /^[A-Z]{2}$/.test(cityCandidate)) return null;
+  // Also reject "CT 06033" style (state + zip in same segment)
+  if (/^[A-Z]{2}\s+\d{5}/.test(cityCandidate)) return null;
   return cityCandidate;
 }
 
@@ -79,7 +89,8 @@ async function fetchCtData(biz: BizParams): Promise<SosData | null> {
 
   let masterUrl = `${CT_BASE}/${CT_MASTER_ID}.json?$q=${encodeURIComponent(searchTerm)}&$limit=30`;
   if (city) {
-    masterUrl += `&$where=${encodeURIComponent(`upper(business_city)='${city.toUpperCase()}'`)}`;
+    // billingcity is the correct Socrata column name for CT Business Registry
+    masterUrl += `&$where=${encodeURIComponent(`upper(billingcity)='${city.toUpperCase()}'`)}`;
   }
 
   const masterRes = await fetch(masterUrl);
@@ -96,15 +107,13 @@ async function fetchCtData(biz: BizParams): Promise<SosData | null> {
   if (masterRows.length === 0) return null;
 
   // Step 2: score every candidate.
-  // Strategy: city is the anchor when available. Name is a tiebreaker.
-  // A city-only match (score=2) is accepted — the city filter already did the heavy lifting.
-  // No city available → require at least a loose name match (score > 0).
+  // CT Socrata column names: 'name' = business name, 'billingcity' = city
   const targetName = normalize(biz.name);
   const targetCity = city ? normalize(city) : null;
 
   const scored = masterRows.map(r => {
-    const rowName = normalize(r.business_name ?? '');
-    const rowCity = normalize(r.business_city ?? '');
+    const rowName = normalize(r.name ?? '');
+    const rowCity = normalize(r.billingcity ?? '');
 
     // Name score — intentionally loose to match variations like "Paw Spa LLC" vs "Paw Spa"
     let nameScore = 0;
@@ -134,38 +143,42 @@ async function fetchCtData(biz: BizParams): Promise<SosData | null> {
   if (candidates.length === 0) return null;
 
   const best = candidates[0];
-  const accountId: string | undefined = best.account_id ?? best.id;
+  // CT master 'id' is the Salesforce record ID used to join principals and agents
+  const accountId: string | undefined = best.id;
   if (!accountId) return null;
 
-  // Step 3: fetch principals (officers/directors/members) for this account
+  // Step 3: fetch principals (officers/directors/members) — joined by business_id
+  // Confirmed CT Socrata fields: business_id, name__c, firstname, lastname, designation
   let officers: { name: string; title: string }[] = [];
   try {
     const princUrl =
-      `${CT_BASE}/${CT_PRINCIPALS_ID}.json?account_id=${encodeURIComponent(accountId)}&$limit=25`;
+      `${CT_BASE}/${CT_PRINCIPALS_ID}.json?$where=${encodeURIComponent(`business_id='${accountId}'`)}&$limit=25`;
     const princRes = await fetch(princUrl);
     if (princRes.ok) {
       const princRows: any[] = await princRes.json();
       officers = princRows.map(p => ({
-        name: [p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' ') || p.principal_name || '',
-        title: p.title ?? p.principal_type ?? '',
+        name: p.name__c ?? [p.firstname, p.lastname].filter(Boolean).join(' ') ?? '',
+        title: p.designation ?? p.title ?? '',
       })).filter(o => o.name);
     }
   } catch { /* non-fatal */ }
 
-  // Step 4: fetch registered agent
+  // Step 4: fetch registered agent — joined by business_id (uses 'business_key' as record ID)
+  // Confirmed CT Socrata fields: name__c, business_street_address_1, business_city
   let registeredAgent: string | null = null;
   try {
     const agentUrl =
-      `${CT_BASE}/${CT_AGENTS_ID}.json?account_id=${encodeURIComponent(accountId)}&$limit=5`;
+      `${CT_BASE}/${CT_AGENTS_ID}.json?$where=${encodeURIComponent(`business_id='${accountId}'`)}&$limit=5`;
     const agentRes = await fetch(agentUrl);
     if (agentRes.ok) {
       const agentRows: any[] = await agentRes.json();
       const agent = agentRows[0];
       if (agent) {
         registeredAgent = [
-          agent.agent_name ?? [agent.first_name, agent.last_name].filter(Boolean).join(' '),
-          agent.agent_street_address,
-          agent.agent_city,
+          agent.name__c,
+          agent.business_street_address_1,
+          agent.business_city,
+          agent.business_state,
         ].filter(Boolean).join(', ') || null;
       }
     }
@@ -175,24 +188,24 @@ async function fetchCtData(biz: BizParams): Promise<SosData | null> {
   const dbaNames: string[] = [];
   if (best.dba_name) dbaNames.push(best.dba_name);
 
-  // Build principal address
+  // Build principal address from correct Socrata fields
   const principalAddress = [
-    best.business_address,
-    best.business_city,
-    best.business_state,
-    best.business_zip_code,
+    best.billingstreet,
+    best.billingcity,
+    best.billingstate,
+    best.billingpostalcode,
   ].filter(Boolean).join(', ') || null;
 
   return {
-    entity_type: best.business_type ?? best.entity_type ?? null,
-    formation_date: best.date_registration ?? best.formation_date ?? null,
+    entity_type: best.business_type ?? null,
+    formation_date: best.date_registration ?? null,
     status: best.status ?? null,
     registered_agent: registeredAgent,
     officers,
     principal_address: principalAddress,
-    dba_names: dbaNames,
+    dba_names: best.dba ? [best.dba] : [],
     naics_code: best.naics_code ?? null,
-    matched_name: best.business_name ?? null,
+    matched_name: best.name ?? null,
     source_url: `https://service.ct.gov/business/s/onlinebusinesssearch?language=en_US`,
     state: 'CT',
     fetched_at: new Date().toISOString(),
