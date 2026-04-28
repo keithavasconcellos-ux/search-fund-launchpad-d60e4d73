@@ -16,7 +16,7 @@ export default {
       fontFamily: {
         sans: ["DM Sans", "sans-serif"],
         display: ["Instrument Serif", "serif"],
-        mono: ["DM Mono", "monospace"],
+        mono: ["Geist Mono", "DM Mono", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -66,6 +66,7 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         teal: "hsl(var(--teal))",
+        "teal-secondary": "hsl(var(--teal-secondary))",
         purple: "hsl(var(--purple))",
         cyan: "hsl(var(--cyan))",
         "text-secondary": "hsl(var(--text-secondary))",
