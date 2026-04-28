@@ -1,13 +1,70 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import {
   Send, Clock, User, Mail, Phone, MessageSquare, ArrowRight,
-  ChevronRight, Sparkles, Building2, CalendarDays, AlertCircle
+  ChevronRight, Sparkles, Building2, CalendarDays, AlertCircle, Wand2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 import { StageBadge } from '@/components/StatusBadge'
 import type { CrmStage } from '@/types/acquira'
+import { getEmailTemplates, type AiBlock } from '@/lib/queries/email-hub'
+import { toast } from 'sonner'
+
+// ── Template helpers (mirror TemplatesTab logic) ──
+function replaceMergeTags(text: string, data: Record<string, string>): string {
+  let result = text
+  for (const [tag, value] of Object.entries(data)) {
+    result = result.split(tag).join(value)
+  }
+  return result
+}
+
+function buildLiveData(business: any, ownerName?: string): Record<string, string> {
+  const cls = Array.isArray(business?.classification)
+    ? business.classification[0]
+    : business?.classification
+  return {
+    '{{business_name}}':         business?.name ?? '',
+    '{{owner_name}}':            ownerName?.split(' ')[0] ?? '{{owner_name}}',
+    '{{city}}':                  business?.county ?? '',
+    '{{state}}':                 business?.state_abbr ?? '',
+    '{{rating}}':                business?.rating?.toString() ?? '?',
+    '{{review_count}}':          business?.review_count?.toString() ?? '?',
+    '{{years_in_business}}':     business?.founded_year
+                                    ? `${new Date().getFullYear() - business.founded_year}+`
+                                    : '?',
+    '{{vertical}}':              cls?.vertical ?? '?',
+    '{{service_area}}':          business?.county ?? '',
+    '{{letter_number}}':         '1',
+    '{{days_since_last_letter}}': '14',
+    '{{sender_name}}':           'Keith Vasconcellos',
+    '{{sender_phone}}':          '(617) 555-0192',
+    '{{sender_email}}':          'keith@acquira.com',
+  }
+}
+
+function fillBodyPlain(
+  body: string,
+  aiBlocks: AiBlock[],
+  generated: Record<string, string>,
+  mergeData: Record<string, string>,
+): string {
+  const parts = body.split(/({{AI_BLOCK_\d+}})/)
+  const filled = parts.map((part) => {
+    const m = part.match(/^{{AI_BLOCK_(\d+)}}$/)
+    if (!m) return part
+    const block = aiBlocks[parseInt(m[1]) - 1]
+    if (!block) return ''
+    return generated[block.id] ?? `[${block.label}]`
+  }).join('')
+  return replaceMergeTags(filled, mergeData)
+}
 
 // ── Mock communication data for demo ──
 const MOCK_COMMS: Record<string, {
@@ -100,6 +157,10 @@ const SENTIMENT_CONFIG = {
 export default function ComposeTab() {
   const [selectedBizId, setSelectedBizId] = useState<string | null>(null)
   const [expandedResponse, setExpandedResponse] = useState<number | null>(null)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
+  const [generatedSubject, setGeneratedSubject] = useState<string>('')
+  const [generatedBody, setGeneratedBody] = useState<string>('')
+  const [isGenerating, setIsGenerating] = useState(false)
 
   const { data: crmBusinesses = [], isLoading } = useQuery({
     queryKey: ['crm-compose-businesses'],
@@ -137,6 +198,58 @@ export default function ComposeTab() {
 
   const comms = selectedBiz ? getMockComms(selectedBiz.id, selectedBiz.name) : null
   const daysSinceContact = comms?.lastContact ? daysSince(comms.lastContact) : null
+  const hasPriorContact = !!comms && comms.threadSnippets.length > 0
+
+  // Templates available for outreach generation
+  const { data: templates = [] } = useQuery({
+    queryKey: ['email-templates-active'],
+    queryFn: getEmailTemplates,
+  })
+  const activeTemplates = useMemo(
+    () => (templates as any[]).filter(t => t.is_active),
+    [templates],
+  )
+
+  // Reset generated draft when switching business
+  useEffect(() => {
+    setSelectedTemplateId('')
+    setGeneratedSubject('')
+    setGeneratedBody('')
+  }, [selectedBizId])
+
+  const ownerContact = contacts.find((c: any) => c.is_owner) ?? contacts[0]
+
+  const generateFromTemplate = async () => {
+    const tmpl = activeTemplates.find((t: any) => t.id === selectedTemplateId)
+    if (!tmpl || !selectedBiz) return
+    setIsGenerating(true)
+    try {
+      const aiBlocks: AiBlock[] = Array.isArray(tmpl.ai_blocks) ? tmpl.ai_blocks : []
+      const generated: Record<string, string> = {}
+      // Tier 1 = cold outreach (no prior contact path)
+      await Promise.all(aiBlocks.map(async (block) => {
+        const prompt = block.tier1_prompt
+        if (!prompt?.trim()) {
+          generated[block.id] = `[${block.label}]`
+          return
+        }
+        const { data, error } = await supabase.functions.invoke('generate-ai-block', {
+          body: { business_id: selectedBiz.id, block_prompt: prompt, tier: 1 },
+        })
+        if (error) throw error
+        generated[block.id] = data.text
+      }))
+      const mergeData = buildLiveData(selectedBiz, ownerContact?.name)
+      setGeneratedSubject(replaceMergeTags(tmpl.subject_template, mergeData))
+      setGeneratedBody(fillBodyPlain(tmpl.body_template, aiBlocks, generated, mergeData))
+      toast.success('Outreach draft generated')
+    } catch (e) {
+      console.error(e)
+      toast.error('Failed to generate outreach')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64 text-muted-foreground font-mono text-sm">Loading CRM…</div>
@@ -324,49 +437,139 @@ export default function ComposeTab() {
               )}
             </div>
 
-            {/* Pre-Prepped Responses */}
-            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <span className="font-mono text-[10px] text-primary uppercase tracking-wider">Suggested Responses</span>
-              </div>
-              <div className="space-y-2">
-                {comms.suggestedResponses.map((resp, i) => (
-                  <div key={i} className="rounded-lg border border-border bg-card overflow-hidden">
-                    <button
-                      onClick={() => setExpandedResponse(expandedResponse === i ? null : i)}
-                      className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                          resp.tone === 'warm' ? 'bg-success/20 text-success' :
-                          resp.tone === 'direct' ? 'bg-primary/20 text-primary' :
-                          'bg-warning/20 text-warning'
-                        }`}>
-                          {resp.tone}
-                        </span>
-                        <span className="text-sm font-medium text-foreground">{resp.label}</span>
-                      </div>
-                      <ArrowRight className={`w-4 h-4 text-muted-foreground transition-transform ${expandedResponse === i ? 'rotate-90' : ''}`} />
-                    </button>
-                    {expandedResponse === i && (
-                      <div className="px-3 pb-3 border-t border-border pt-3">
-                        <pre className="text-sm text-foreground/80 whitespace-pre-wrap font-sans leading-relaxed">
-                          {resp.body}
-                        </pre>
-                        <div className="flex items-center gap-2 mt-3">
-                          <Button size="sm" className="gap-1.5" onClick={() => {
-                            navigator.clipboard.writeText(resp.body)
-                          }}>
-                            <Send className="w-3 h-3" /> Copy & Use
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+            {/* Outreach Generator — only when no prior contact */}
+            {!hasPriorContact && (
+              <div className="rounded-xl border border-purple-500/25 bg-purple-500/5 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Wand2 className="w-4 h-4 text-purple-400" />
+                  <span className="font-mono text-[10px] text-purple-400 uppercase tracking-wider">
+                    Generate Outreach from Template
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 mb-3">
+                  <Select
+                    value={selectedTemplateId}
+                    onValueChange={setSelectedTemplateId}
+                    disabled={isGenerating || activeTemplates.length === 0}
+                  >
+                    <SelectTrigger className="flex-1 bg-card">
+                      <SelectValue placeholder={
+                        activeTemplates.length === 0
+                          ? 'No active templates available'
+                          : 'Choose a template…'
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeTemplates.map((t: any) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}
+                          {t.target_vertical ? ` · ${t.target_vertical}` : ''}
+                          {` · L${t.letter_number}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    onClick={generateFromTemplate}
+                    disabled={!selectedTemplateId || isGenerating}
+                    className="gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {isGenerating ? 'Generating…' : 'Generate'}
+                  </Button>
+                </div>
+
+                {(generatedSubject || generatedBody) && (
+                  <div className="space-y-2">
+                    <div>
+                      <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">
+                        Subject
+                      </label>
+                      <Input
+                        value={generatedSubject}
+                        onChange={(e) => setGeneratedSubject(e.target.value)}
+                        className="bg-card"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">
+                        Body — edit freely before sending
+                      </label>
+                      <Textarea
+                        value={generatedBody}
+                        onChange={(e) => setGeneratedBody(e.target.value)}
+                        className="bg-card min-h-[260px] font-sans text-sm leading-relaxed"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            `Subject: ${generatedSubject}\n\n${generatedBody}`
+                          )
+                          toast.success('Copied to clipboard')
+                        }}
+                      >
+                        <Send className="w-3 h-3" /> Copy & Use
+                      </Button>
+                      <span className="text-[11px] text-muted-foreground">
+                        Edits stay local until you send.
+                      </span>
+                    </div>
                   </div>
-                ))}
+                )}
               </div>
-            </div>
+            )}
+
+            {/* Pre-Prepped Responses — only when there's prior contact history */}
+            {hasPriorContact && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <span className="font-mono text-[10px] text-primary uppercase tracking-wider">Suggested Responses</span>
+                </div>
+                <div className="space-y-2">
+                  {comms.suggestedResponses.map((resp, i) => (
+                    <div key={i} className="rounded-lg border border-border bg-card overflow-hidden">
+                      <button
+                        onClick={() => setExpandedResponse(expandedResponse === i ? null : i)}
+                        className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                            resp.tone === 'warm' ? 'bg-success/20 text-success' :
+                            resp.tone === 'direct' ? 'bg-primary/20 text-primary' :
+                            'bg-warning/20 text-warning'
+                          }`}>
+                            {resp.tone}
+                          </span>
+                          <span className="text-sm font-medium text-foreground">{resp.label}</span>
+                        </div>
+                        <ArrowRight className={`w-4 h-4 text-muted-foreground transition-transform ${expandedResponse === i ? 'rotate-90' : ''}`} />
+                      </button>
+                      {expandedResponse === i && (
+                        <div className="px-3 pb-3 border-t border-border pt-3">
+                          <pre className="text-sm text-foreground/80 whitespace-pre-wrap font-sans leading-relaxed">
+                            {resp.body}
+                          </pre>
+                          <div className="flex items-center gap-2 mt-3">
+                            <Button size="sm" className="gap-1.5" onClick={() => {
+                              navigator.clipboard.writeText(resp.body)
+                            }}>
+                              <Send className="w-3 h-3" /> Copy & Use
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
