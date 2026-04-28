@@ -2,3 +2,6 @@ project_id = "dzepmywtihvjgewdrynx"
 
 [functions.generate-dd-memo]
 verify_jwt = false
+
+[functions.extract-cim-business]
+verify_jwt = false
