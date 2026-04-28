@@ -1,13 +1,70 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import {
   Send, Clock, User, Mail, Phone, MessageSquare, ArrowRight,
-  ChevronRight, Sparkles, Building2, CalendarDays, AlertCircle
+  ChevronRight, Sparkles, Building2, CalendarDays, AlertCircle, Wand2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 import { StageBadge } from '@/components/StatusBadge'
 import type { CrmStage } from '@/types/acquira'
+import { getEmailTemplates, type AiBlock } from '@/lib/queries/email-hub'
+import { toast } from 'sonner'
+
+// ── Template helpers (mirror TemplatesTab logic) ──
+function replaceMergeTags(text: string, data: Record<string, string>): string {
+  let result = text
+  for (const [tag, value] of Object.entries(data)) {
+    result = result.split(tag).join(value)
+  }
+  return result
+}
+
+function buildLiveData(business: any, ownerName?: string): Record<string, string> {
+  const cls = Array.isArray(business?.classification)
+    ? business.classification[0]
+    : business?.classification
+  return {
+    '{{business_name}}':         business?.name ?? '',
+    '{{owner_name}}':            ownerName?.split(' ')[0] ?? '{{owner_name}}',
+    '{{city}}':                  business?.county ?? '',
+    '{{state}}':                 business?.state_abbr ?? '',
+    '{{rating}}':                business?.rating?.toString() ?? '?',
+    '{{review_count}}':          business?.review_count?.toString() ?? '?',
+    '{{years_in_business}}':     business?.founded_year
+                                    ? `${new Date().getFullYear() - business.founded_year}+`
+                                    : '?',
+    '{{vertical}}':              cls?.vertical ?? '?',
+    '{{service_area}}':          business?.county ?? '',
+    '{{letter_number}}':         '1',
+    '{{days_since_last_letter}}': '14',
+    '{{sender_name}}':           'Keith Vasconcellos',
+    '{{sender_phone}}':          '(617) 555-0192',
+    '{{sender_email}}':          'keith@acquira.com',
+  }
+}
+
+function fillBodyPlain(
+  body: string,
+  aiBlocks: AiBlock[],
+  generated: Record<string, string>,
+  mergeData: Record<string, string>,
+): string {
+  const parts = body.split(/({{AI_BLOCK_\d+}})/)
+  const filled = parts.map((part) => {
+    const m = part.match(/^{{AI_BLOCK_(\d+)}}$/)
+    if (!m) return part
+    const block = aiBlocks[parseInt(m[1]) - 1]
+    if (!block) return ''
+    return generated[block.id] ?? `[${block.label}]`
+  }).join('')
+  return replaceMergeTags(filled, mergeData)
+}
 
 // ── Mock communication data for demo ──
 const MOCK_COMMS: Record<string, {
