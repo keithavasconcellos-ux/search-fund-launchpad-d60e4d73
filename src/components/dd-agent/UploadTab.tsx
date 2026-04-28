@@ -63,20 +63,41 @@ export function UploadTab({ onMemoCreated, onOpenMemo }: {
 
   const wordCount = notes.trim().split(/\s+/).filter(Boolean).length;
   const canGenerate =
-    !!businessId &&
     !generating &&
-    (mode === 'name_only' ||
-      (mode === 'cim' && !!file) ||
-      (mode === 'call_notes' && wordCount >= 50));
+    ((mode === 'new_from_cim' && !!file && !!newBusinessName.trim()) ||
+      (!!businessId &&
+        (mode === 'name_only' ||
+          (mode === 'cim' && !!file) ||
+          (mode === 'call_notes' && wordCount >= 50))));
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
     setGenerating(true);
     try {
+      let targetBusinessId = businessId;
+      let cimText = fileText;
+
+      if (mode === 'new_from_cim' && file) {
+        setGeneratingStage('Reading CIM and creating business…');
+        const result = await extractCimBusiness({ name: newBusinessName.trim(), file });
+        targetBusinessId = result.business.id;
+        cimText = result.cim_text_dump || fileText;
+        toast.success(`Added "${result.business.name}" to CRM`);
+        // Refresh CRM caches
+        queryClient.invalidateQueries({ queryKey: ['businesses'] });
+        queryClient.invalidateQueries({ queryKey: ['crm-businesses'] });
+      }
+
+      setGeneratingStage('Generating DD memo…');
       const memo = await generateMemo({
-        business_id: businessId,
-        input_type: mode,
-        input_text: mode === 'cim' ? `[Filename: ${file?.name}]\n\n${fileText}` : mode === 'call_notes' ? notes : undefined,
+        business_id: targetBusinessId,
+        input_type: mode === 'new_from_cim' ? 'cim' : mode,
+        input_text:
+          mode === 'cim' || mode === 'new_from_cim'
+            ? `[Filename: ${file?.name}]\n\n${cimText}`
+            : mode === 'call_notes'
+            ? notes
+            : undefined,
         analysis_label: analysisLabel || 'Initial DD',
         additional_context: additionalContext || undefined,
         page_count: undefined,
@@ -87,14 +108,16 @@ export function UploadTab({ onMemoCreated, onOpenMemo }: {
       toast.error(e.message ?? 'Generation failed');
     } finally {
       setGenerating(false);
+      setGeneratingStage('');
     }
   };
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
       {/* Mode toggle */}
-      <div className="grid grid-cols-3 bg-background-tertiary rounded-md p-1 mb-6">
+      <div className="grid grid-cols-4 bg-background-tertiary rounded-md p-1 mb-6 gap-0.5">
         {([
+          { v: 'new_from_cim', l: 'New + CIM' },
           { v: 'cim', l: 'CIM Upload' },
           { v: 'call_notes', l: 'Call Notes' },
           { v: 'name_only', l: 'Name Only' },
@@ -102,7 +125,7 @@ export function UploadTab({ onMemoCreated, onOpenMemo }: {
           <button
             key={opt.v}
             onClick={() => setMode(opt.v)}
-            className={`py-2 text-sm font-medium rounded transition-colors ${
+            className={`py-2 text-xs font-medium rounded transition-colors ${
               mode === opt.v ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
