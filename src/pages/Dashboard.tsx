@@ -191,7 +191,7 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="flex items-center gap-2.5">
-          <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-background-tertiary border border-border-subtle text-muted-foreground font-mono text-[11px] hover:bg-background-quaternary hover:text-foreground transition-colors">
+          <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-background-tertiary border border-border text-muted-foreground font-mono text-[11px] hover:bg-background-quaternary hover:text-foreground transition-colors">
             <RefreshCw className="w-3 h-3" />
             Refresh
           </button>
@@ -507,7 +507,7 @@ function KpiCard({
 }) {
   const color = accentColor(accent);
   return (
-    <div className="relative bg-card border border-border rounded-[10px] p-5 pb-4 overflow-hidden hover:border-border-subtle transition-colors">
+    <div className="relative bg-card border border-border rounded-[10px] p-5 pb-4 overflow-hidden hover:border-border transition-colors">
       <div
         className="absolute top-0 inset-x-0 h-[2px] opacity-60"
         style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }}
