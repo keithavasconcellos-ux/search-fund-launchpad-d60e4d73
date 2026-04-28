@@ -195,7 +195,7 @@ export default function Dashboard() {
       count,
       // Keep a minimum so the count label stays readable on tiny bars
       width: count > 0 ? Math.max(pct, 6) : 0,
-      color: m.color,
+      hsl: m.hsl,
     };
   });
 
