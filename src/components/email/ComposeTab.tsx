@@ -437,49 +437,139 @@ export default function ComposeTab() {
               )}
             </div>
 
-            {/* Pre-Prepped Responses */}
-            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <span className="font-mono text-[10px] text-primary uppercase tracking-wider">Suggested Responses</span>
-              </div>
-              <div className="space-y-2">
-                {comms.suggestedResponses.map((resp, i) => (
-                  <div key={i} className="rounded-lg border border-border bg-card overflow-hidden">
-                    <button
-                      onClick={() => setExpandedResponse(expandedResponse === i ? null : i)}
-                      className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                          resp.tone === 'warm' ? 'bg-success/20 text-success' :
-                          resp.tone === 'direct' ? 'bg-primary/20 text-primary' :
-                          'bg-warning/20 text-warning'
-                        }`}>
-                          {resp.tone}
-                        </span>
-                        <span className="text-sm font-medium text-foreground">{resp.label}</span>
-                      </div>
-                      <ArrowRight className={`w-4 h-4 text-muted-foreground transition-transform ${expandedResponse === i ? 'rotate-90' : ''}`} />
-                    </button>
-                    {expandedResponse === i && (
-                      <div className="px-3 pb-3 border-t border-border pt-3">
-                        <pre className="text-sm text-foreground/80 whitespace-pre-wrap font-sans leading-relaxed">
-                          {resp.body}
-                        </pre>
-                        <div className="flex items-center gap-2 mt-3">
-                          <Button size="sm" className="gap-1.5" onClick={() => {
-                            navigator.clipboard.writeText(resp.body)
-                          }}>
-                            <Send className="w-3 h-3" /> Copy & Use
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+            {/* Outreach Generator — only when no prior contact */}
+            {!hasPriorContact && (
+              <div className="rounded-xl border border-purple-500/25 bg-purple-500/5 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Wand2 className="w-4 h-4 text-purple-400" />
+                  <span className="font-mono text-[10px] text-purple-400 uppercase tracking-wider">
+                    Generate Outreach from Template
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 mb-3">
+                  <Select
+                    value={selectedTemplateId}
+                    onValueChange={setSelectedTemplateId}
+                    disabled={isGenerating || activeTemplates.length === 0}
+                  >
+                    <SelectTrigger className="flex-1 bg-card">
+                      <SelectValue placeholder={
+                        activeTemplates.length === 0
+                          ? 'No active templates available'
+                          : 'Choose a template…'
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeTemplates.map((t: any) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}
+                          {t.target_vertical ? ` · ${t.target_vertical}` : ''}
+                          {` · L${t.letter_number}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    onClick={generateFromTemplate}
+                    disabled={!selectedTemplateId || isGenerating}
+                    className="gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {isGenerating ? 'Generating…' : 'Generate'}
+                  </Button>
+                </div>
+
+                {(generatedSubject || generatedBody) && (
+                  <div className="space-y-2">
+                    <div>
+                      <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">
+                        Subject
+                      </label>
+                      <Input
+                        value={generatedSubject}
+                        onChange={(e) => setGeneratedSubject(e.target.value)}
+                        className="bg-card"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">
+                        Body — edit freely before sending
+                      </label>
+                      <Textarea
+                        value={generatedBody}
+                        onChange={(e) => setGeneratedBody(e.target.value)}
+                        className="bg-card min-h-[260px] font-sans text-sm leading-relaxed"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            `Subject: ${generatedSubject}\n\n${generatedBody}`
+                          )
+                          toast.success('Copied to clipboard')
+                        }}
+                      >
+                        <Send className="w-3 h-3" /> Copy & Use
+                      </Button>
+                      <span className="text-[11px] text-muted-foreground">
+                        Edits stay local until you send.
+                      </span>
+                    </div>
                   </div>
-                ))}
+                )}
               </div>
-            </div>
+            )}
+
+            {/* Pre-Prepped Responses — only when there's prior contact history */}
+            {hasPriorContact && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <span className="font-mono text-[10px] text-primary uppercase tracking-wider">Suggested Responses</span>
+                </div>
+                <div className="space-y-2">
+                  {comms.suggestedResponses.map((resp, i) => (
+                    <div key={i} className="rounded-lg border border-border bg-card overflow-hidden">
+                      <button
+                        onClick={() => setExpandedResponse(expandedResponse === i ? null : i)}
+                        className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                            resp.tone === 'warm' ? 'bg-success/20 text-success' :
+                            resp.tone === 'direct' ? 'bg-primary/20 text-primary' :
+                            'bg-warning/20 text-warning'
+                          }`}>
+                            {resp.tone}
+                          </span>
+                          <span className="text-sm font-medium text-foreground">{resp.label}</span>
+                        </div>
+                        <ArrowRight className={`w-4 h-4 text-muted-foreground transition-transform ${expandedResponse === i ? 'rotate-90' : ''}`} />
+                      </button>
+                      {expandedResponse === i && (
+                        <div className="px-3 pb-3 border-t border-border pt-3">
+                          <pre className="text-sm text-foreground/80 whitespace-pre-wrap font-sans leading-relaxed">
+                            {resp.body}
+                          </pre>
+                          <div className="flex items-center gap-2 mt-3">
+                            <Button size="sm" className="gap-1.5" onClick={() => {
+                              navigator.clipboard.writeText(resp.body)
+                            }}>
+                              <Send className="w-3 h-3" /> Copy & Use
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
