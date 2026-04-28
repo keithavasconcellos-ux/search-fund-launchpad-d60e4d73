@@ -274,9 +274,9 @@ export default function Dashboard() {
 
           <div className="mt-4 pt-3.5 border-t border-border grid grid-cols-3 gap-2">
             {[
-              { l: 'Contacted→Engaged', v: '40%' },
-              { l: 'Engaged→NDA',       v: '44%' },
-              { l: 'NDA→CIM',           v: '63%' },
+              { l: 'Contacted→Engaged', v: conv('contacted', 'engaged') },
+              { l: 'Engaged→NDA',       v: conv('engaged', 'nda_signed') },
+              { l: 'NDA→CIM',           v: conv('nda_signed', 'cim_received') },
             ].map((m) => (
               <div key={m.l}>
                 <div className="font-mono text-[9px] text-text-tertiary uppercase tracking-wider mb-1">{m.l}</div>
