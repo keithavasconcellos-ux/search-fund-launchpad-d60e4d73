@@ -32,14 +32,7 @@ const KPIS_BOTTOM = [
   { label: 'Letters in Queue', value: '47', sub: 'Ready to review & send', tone: 'warn' as const, accent: 'warning' },
 ];
 
-const FUNNEL = [
-  { label: 'Identified',   count: 62, width: 100, color: 'hsl(var(--primary))' },
-  { label: 'Contacted',    count: 45, width: 72,  color: 'hsl(var(--primary))' },
-  { label: 'Engaged',      count: 18, width: 29,  color: 'hsl(var(--purple))' },
-  { label: 'NDA Signed',   count: 8,  width: 13,  color: 'hsl(var(--warning))' },
-  { label: 'CIM Received', count: 5,  width: 8,   color: 'hsl(var(--destructive))' },
-  { label: 'Active LOI',   count: 3,  width: 5,   color: 'hsl(var(--destructive))' },
-];
+
 
 const ACTIVITY = [
   { icon: MessageSquare, tone: 'success', html: <><strong>Northeast Electrical</strong> replied — Positive</>, time: 'Today, 8:42 AM' },
