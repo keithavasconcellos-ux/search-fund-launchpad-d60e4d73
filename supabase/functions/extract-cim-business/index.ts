@@ -69,13 +69,13 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { name, file_base64, file_mime, file_name } = body ?? {};
+    const { name, storage_path, file_mime, file_name } = body ?? {};
 
     if (!name || typeof name !== "string" || !name.trim()) {
       return json({ error: "name is required" }, 400);
     }
-    if (!file_base64 || !file_mime) {
-      return json({ error: "file_base64 and file_mime are required" }, 400);
+    if (!storage_path || !file_mime) {
+      return json({ error: "storage_path and file_mime are required" }, 400);
     }
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -85,9 +85,22 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // Multimodal call: pass the file as a data URL inside a user content part.
-    // Lovable AI Gateway / Gemini accepts OpenAI-style image_url with a base64 data URL,
-    // and supports application/pdf for Gemini 2.5 / 3 models.
+    // Download the CIM from storage (avoids huge JSON payloads through the function gateway)
+    const { data: fileBlob, error: dlErr } = await admin.storage
+      .from("dd-documents")
+      .download(storage_path);
+    if (dlErr || !fileBlob) {
+      console.error("storage download error", dlErr);
+      return json({ error: `Failed to download file from storage: ${dlErr?.message ?? "unknown"}` }, 500);
+    }
+    const fileBuf = new Uint8Array(await fileBlob.arrayBuffer());
+    // base64 encode
+    let binary = "";
+    const chunk = 0x8000;
+    for (let i = 0; i < fileBuf.length; i += chunk) {
+      binary += String.fromCharCode(...fileBuf.subarray(i, i + chunk));
+    }
+    const file_base64 = btoa(binary);
     const dataUrl = `data:${file_mime};base64,${file_base64}`;
 
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -213,7 +226,7 @@ Deno.serve(async (req) => {
           customer_type: c.customer_type ?? null,
           geographic_scope: c.geographic_scope ?? null,
           years_in_business: c.years_in_business ?? null,
-          classified_by: "cim_extraction",
+          classified_by: "model",
           classification_confidence: extracted.confidence ?? "medium",
         });
       if (clsErr) {
