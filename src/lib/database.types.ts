@@ -389,6 +389,7 @@ export type Database = {
           body_template: string
           target_vertical: string | null
           is_active: boolean
+          ai_blocks: Json
           created_at: string
           updated_at: string
         }
@@ -400,6 +401,7 @@ export type Database = {
           body_template: string
           target_vertical?: string | null
           is_active?: boolean
+          ai_blocks?: Json
           created_at?: string
           updated_at?: string
         }
@@ -411,6 +413,7 @@ export type Database = {
           body_template?: string
           target_vertical?: string | null
           is_active?: boolean
+          ai_blocks?: Json
           created_at?: string
           updated_at?: string
         }

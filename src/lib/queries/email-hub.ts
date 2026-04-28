@@ -1,5 +1,13 @@
 import { supabase } from '@/integrations/supabase/client'
 
+export type AiBlock = {
+  id: string
+  label: string
+  tier1_prompt: string
+  tier2_prompt: string
+  tier3_prompt: string
+}
+
 // ──────────────────────────────────────────────
 // Inbox queries
 // ──────────────────────────────────────────────
@@ -158,6 +166,7 @@ export async function upsertEmailTemplate(template: {
   target_vertical: string | null
   letter_number: number
   is_active: boolean
+  ai_blocks?: AiBlock[]
 }) {
   const { data, error } = await supabase
     .from('email_templates')
@@ -167,6 +176,16 @@ export async function upsertEmailTemplate(template: {
 
   if (error) throw error
   return data
+}
+
+export async function getBusinessesForTemplatePreview() {
+  const { data, error } = await supabase
+    .from('businesses')
+    .select('id, name, crm_stage, county, state_abbr, rating, review_count, founded_year')
+    .order('last_activity_at', { ascending: false, nullsFirst: false })
+    .limit(200)
+  if (error) throw error
+  return data ?? []
 }
 
 // ──────────────────────────────────────────────

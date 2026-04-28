@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acquira — Email Templates Conceptual Spec</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg:         #080d14;
+    --bg2:        #0c1420;
+    --bg3:        #111d2e;
+    --bg4:        #172236;
+    --teal:       #14b8a6;
+    --teal-dim:   #14b8a615;
+    --teal-mid:   #14b8a630;
+    --teal-glow:  #14b8a608;
+    --text:       #dde4ee;
+    --text-mid:   #8fa3bc;
+    --text-dim:   #4d6480;
+    --border:     #162032;
+    --border2:    #1e3048;
+    --amber:      #f59e0b;
+    --amber-bg:   #f59e0b12;
+    --red:        #f43f5e;
+    --red-bg:     #f43f5e12;
+    --green:      #34d399;
+    --green-bg:   #34d39912;
+    --purple:     #a78bfa;
+    --purple-bg:  #a78bfa12;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.75;
+    font-size: 15px;
+  }
+
+  /* ── LAYOUT ── */
+  .shell { display: flex; min-height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 230px;
+    min-width: 230px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 36px 0 40px;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--teal);
+    padding: 0 22px 4px;
+    letter-spacing: -0.3px;
+  }
+
+  .logo-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    padding: 0 22px 32px;
+  }
+
+  .nav-group {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    color: var(--text-dim);
+    padding: 18px 22px 6px;
+  }
+
+  .nav-a {
+    display: block;
+    padding: 6px 22px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-mid);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .nav-a:hover { color: var(--text); background: var(--bg3); }
+  .nav-a.on { color: var(--teal); border-left-color: var(--teal); background: var(--teal-dim); }
+
+  .nav-a.indent {
+    padding-left: 34px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .nav-a.indent:hover { color: var(--text-mid); }
+
+  /* ── MAIN ── */
+  .main {
+    flex: 1;
+    min-width: 0;
+    padding: 64px 80px 100px;
+    max-width: 860px;
+  }
+
+  /* ── COVER ── */
+  .cover {
+    margin-bottom: 72px;
+    padding-bottom: 48px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cover-eye {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--teal);
+    margin-bottom: 20px;
+  }
+
+  .cover-h {
+    font-family: 'Lora', serif;
+    font-size: 42px;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+    margin-bottom: 16px;
+  }
+
+  .cover-h em {
+    font-style: italic;
+    color: var(--teal);
+  }
+
+  .cover-desc {
+    font-size: 16px;
+    color: var(--text-mid);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+
+  .cover-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+  }
+
+  /* ── SECTION LABEL ── */
+  .sec-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--teal);
+    margin-bottom: 10px;
+    margin-top: 56px;
+  }
+
+  /* ── HEADINGS ── */
+  h2 {
+    font-family: 'Lora', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.2px;
+    margin-bottom: 16px;
+    line-height: 1.3;
+    scroll-margin-top: 40px;
+  }
+
+  h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--teal);
+    margin: 32px 0 10px;
+    scroll-margin-top: 40px;
+  }
+
+  h4 {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    margin: 24px 0 8px;
+    font-style: italic;
+  }
+
+  p {
+    color: var(--text-mid);
+    margin-bottom: 14px;
+    font-size: 14.5px;
+    line-height: 1.75;
+  }
+
+  p strong { color: var(--text); font-weight: 600; }
+
+  /* ── LISTS ── */
+  ul {
+    list-style: none;
+    margin: 10px 0 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  li {
+    font-size: 14px;
+    color: var(--text-mid);
+    padding-left: 18px;
+    position: relative;
+    line-height: 1.65;
+  }
+
+  li::before {
+    content: '–';
+    position: absolute;
+    left: 0;
+    color: var(--teal);
+    font-weight: 600;
+  }
+
+  li strong { color: var(--text); font-weight: 600; }
+
+  /* ── CALLOUTS ── */
+  .box {
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin: 20px 0;
+    font-size: 14px;
+    line-height: 1.7;
+    border: 1px solid transparent;
+  }
+
+  .box-teal   { background: var(--teal-dim);   border-color: var(--teal-mid);    color: #5eead4; }
+  .box-amber  { background: var(--amber-bg);   border-color: #f59e0b30;          color: #fcd34d; }
+  .box-amber::before { content: '⚠  '; }
+  .box-red    { background: var(--red-bg);     border-color: #f43f5e30;          color: #fda4af; }
+  .box-green  { background: var(--green-bg);   border-color: #34d39930;          color: #6ee7b7; }
+  .box-purple { background: var(--purple-bg);  border-color: #a78bfa30;          color: #c4b5fd; }
+
+  .box strong { color: inherit; font-weight: 600; }
+
+  /* ── PRINCIPLE CARDS ── */
+  .principles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 20px 0;
+  }
+
+  .principle {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 20px;
+  }
+
+  .principle-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--teal);
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .principle-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .principle-desc {
+    font-size: 13px;
+    color: var(--text-mid);
+    line-height: 1.6;
+  }
+
+  /* ── PHASE CARDS ── */
+  .phases {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 20px 0;
+  }
+
+  .phase {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .phase-label {
+    background: var(--bg3);
+    padding: 16px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--teal);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .phase-label span {
+    color: var(--text-mid);
+    font-size: 11px;
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+  }
+
+  .phase-body {
+    background: var(--bg2);
+    padding: 14px 18px;
+    font-size: 13.5px;
+    color: var(--text-mid);
+    line-height: 1.65;
+  }
+
+  .phase-body strong { color: var(--text); font-weight: 600; }
+
+  /* ── ZONE CARDS ── */
+  .zones {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  .zone {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--teal);
+    border-radius: 0 8px 8px 0;
+    padding: 18px 20px;
+  }
+
+  .zone.amber { border-left-color: var(--amber); }
+  .zone.purple { border-left-color: var(--purple); }
+
+  .zone-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .zone-desc {
+    font-size: 13px;
+    color: var(--text-mid);
+    line-height: 1.6;
+  }
+
+  .zone-desc strong { color: var(--text); }
+
+  /* ── COMPARISON TABLE ── */
+  .cmp {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 13.5px;
+  }
+
+  .cmp th {
+    background: var(--bg3);
+    color: var(--text-mid);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border2);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .cmp td {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-mid);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+
+  .cmp tr:last-child td { border-bottom: none; }
+  .cmp td:first-child { color: var(--teal); font-weight: 500; }
+  .cmp td strong { color: var(--text); font-weight: 600; }
+
+  /* ── DIVIDER ── */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 56px 0;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
+
+  /* ── FOOTER ── */
+  .footer {
+    margin-top: 80px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+
+  .anchor { scroll-margin-top: 40px; }
+
+  /* ── TIER CARDS ── */
+  .tiers {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin: 20px 0;
+  }
+
+  .tier {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border2);
+  }
+
+  .tier-label {
+    padding: 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .tier-label .tier-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .tier-label .tier-name {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .tier-label .tier-when {
+    font-size: 11px;
+    font-style: italic;
+    margin-top: 2px;
+    opacity: 0.75;
+  }
+
+  .tier.t1 .tier-label { background: #0d2a20; }
+  .tier.t1 .tier-num   { color: var(--green); }
+  .tier.t1 .tier-name  { color: #6ee7b7; }
+  .tier.t1 .tier-when  { color: #6ee7b7; }
+
+  .tier.t2 .tier-label { background: #1f1a0d; }
+  .tier.t2 .tier-num   { color: var(--amber); }
+  .tier.t2 .tier-name  { color: #fcd34d; }
+  .tier.t2 .tier-when  { color: #fcd34d; }
+
+  .tier.t3 .tier-label { background: #1a0d2a; }
+  .tier.t3 .tier-num   { color: var(--purple); }
+  .tier.t3 .tier-name  { color: #c4b5fd; }
+  .tier.t3 .tier-when  { color: #c4b5fd; }
+
+  .tier-body {
+    background: var(--bg2);
+    padding: 16px 20px;
+    font-size: 13.5px;
+    color: var(--text-mid);
+    line-height: 1.65;
+  }
+
+  .tier-body strong { color: var(--text); font-weight: 600; }
+
+  .tier-body ul {
+    margin: 8px 0 0;
+    gap: 4px;
+  }
+
+  .tier-body li { font-size: 13px; }
+
+  /* ── BLOCK PROMPT EXAMPLE ── */
+  .prompt-example {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--purple);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    margin: 10px 0;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--text-mid);
+    line-height: 1.65;
+  }
+
+  .prompt-example strong {
+    font-style: normal;
+    color: var(--purple);
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  /* ── UNLOCK TABLE ── */
+  .unlock-row {
+    display: grid;
+    grid-template-columns: 160px 1fr 1fr;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .unlock-row:last-child { border-bottom: none; }
+  .unlock-row:first-child {
+    background: var(--bg3);
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+  }
+
+  .unlock-cell {
+    padding: 10px 14px;
+    color: var(--text-mid);
+    border-right: 1px solid var(--border);
+    line-height: 1.5;
+  }
+
+  .unlock-cell:last-child { border-right: none; }
+  .unlock-cell:first-child { color: var(--teal); font-weight: 500; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+  .unlock-table {
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 16px 0;
+  }
+
+  .check { color: var(--green); }
+  .cross { color: var(--text-dim); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="logo">acquira</div>
+    <div class="logo-sub">Templates Spec</div>
+
+    <div class="nav-group">Overview</div>
+    <a href="#goal" class="nav-a">The Goal</a>
+    <a href="#principles" class="nav-a">Core Principles</a>
+
+    <div class="nav-group">The Editor</div>
+    <a href="#zones" class="nav-a">Three Writing Zones</a>
+    <a href="#merge-tags" class="nav-a">Merge Tags</a>
+    <a href="#ai-blocks" class="nav-a">AI Generation Blocks</a>
+    <a href="#preview" class="nav-a">Live Preview</a>
+
+    <div class="nav-group">Personalisation</div>
+    <a href="#what-works" class="nav-a">What Actually Works</a>
+    <a href="#data-sources" class="nav-a">Data Sources to Use</a>
+    <a href="#intimacy-tiers" class="nav-a">Intimacy Tier System</a>
+    <a href="#tier-detail" class="nav-a indent">The Three Tiers</a>
+    <a href="#tier-blocks" class="nav-a indent">Tier-Aware AI Blocks</a>
+    <a href="#tier-ux" class="nav-a indent">UX Behaviour</a>
+    <a href="#the-line" class="nav-a">Where to Draw the Line</a>
+
+    <div class="nav-group">Generation Flow</div>
+    <a href="#flow" class="nav-a">Per-Business Generation</a>
+    <a href="#research-link" class="nav-a">Research Integration</a>
+    <a href="#quality" class="nav-a">Quality Control</a>
+
+    <div class="nav-group">Structure</div>
+    <a href="#sequences" class="nav-a">Sequences & Cadences</a>
+    <a href="#library" class="nav-a">Template Library</a>
+
+    <div class="nav-group">Build</div>
+    <a href="#phases" class="nav-a">Build Phases</a>
+    <a href="#decisions" class="nav-a">Decisions for Antigravity</a>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- COVER -->
+    <div class="cover">
+      <div class="cover-eye">Acquira · Email Hub · For Antigravity</div>
+      <div class="cover-h">Email Templates<br><em>Conceptual Specification</em></div>
+      <div class="cover-desc">What the Templates tab should do, why each piece matters, and how the personalisation engine — including the three-tier intimacy system — should think. Architecture and implementation decisions are left to Antigravity.</div>
+      <div class="cover-meta">
+        <span>Version 1.1</span>
+        <span>April 2026</span>
+        <span>J. Davidson</span>
+        <span>Conceptual · Not Architectural</span>
+      </div>
+    </div>
+
+
+    <!-- ══ GOAL ══ -->
+    <div class="sec-label">Purpose</div>
+    <h2 id="goal" class="anchor">The Goal</h2>
+
+    <p>The Templates tab exists to solve one specific problem: <strong>sending outreach that feels personally written at a volume that would be impossible to write manually.</strong></p>
+
+    <p>Most search fund outreach fails not because the buyer is unqualified but because the letter reads like a mail merge. Small business owners who have built something over 20+ years can tell instantly when a letter was sent to 500 people. The goal of this tab is to make every letter feel like it was written for that one owner — because in the parts that matter, it was.</p>
+
+    <p>The Templates tab is not a bulk email tool. It is a <strong>crafting environment</strong> where you author the frame of a letter once, and the system personalises the human details for each recipient from everything Acquira knows about that business and owner.</p>
+
+
+    <!-- ══ PRINCIPLES ══ -->
+    <div class="sec-label">Foundation</div>
+    <h2 id="principles" class="anchor">Core Principles</h2>
+
+    <p>These four principles should guide every design decision Antigravity makes for this tab:</p>
+
+    <div class="principles">
+      <div class="principle">
+        <div class="principle-num">01</div>
+        <div class="principle-title">Your voice, not the AI's</div>
+        <div class="principle-desc">The letter should sound like you wrote it. The AI fills in specific details — it does not write the letter. If the output sounds like AI, the feature has failed.</div>
+      </div>
+      <div class="principle">
+        <div class="principle-num">02</div>
+        <div class="principle-title">Specific beats generic</div>
+        <div class="principle-desc">One genuinely specific detail about the owner's business is worth more than three paragraphs of well-crafted generic copy. Optimise for specificity over volume of personalisation.</div>
+      </div>
+      <div class="principle">
+        <div class="principle-num">03</div>
+        <div class="principle-title">You are always in control</div>
+        <div class="principle-desc">Nothing sends without your eyes on it. Every generated letter is editable before it enters the compose queue. The AI proposes, you approve.</div>
+      </div>
+      <div class="principle">
+        <div class="principle-num">04</div>
+        <div class="principle-title">Better data = better letters</div>
+        <div class="principle-desc">Businesses that have been through the Research Panel should produce noticeably better letters than those that haven't. This is the incentive to research before outreach.</div>
+      </div>
+    </div>
+
+    <hr>
+
+
+    <!-- ══ ZONES ══ -->
+    <div class="sec-label">The Editor</div>
+    <h2 id="zones" class="anchor">Three Writing Zones</h2>
+
+    <p>The template editor has three distinct types of content. Antigravity should design the editing experience around this distinction — they are not the same thing and should not look or behave the same way.</p>
+
+    <div class="zones">
+      <div class="zone">
+        <div class="zone-title">Zone 1 — Fixed Copy</div>
+        <div class="zone-desc">Text you write that goes out <strong>verbatim to every recipient</strong>. Your opening about who you are, your closing, your call to action. This is your authentic voice — the AI never touches it. It should be styled as plain text, clearly readable, what-you-see-is-what-gets-sent.</div>
+      </div>
+      <div class="zone amber">
+        <div class="zone-title">Zone 2 — Merge Tags</div>
+        <div class="zone-desc">Simple variable substitutions pulled <strong>deterministically from the database</strong> — no AI involved. Examples: the owner's name, the business name, city, years in operation, star rating, vertical. Fast, reliable, zero hallucination risk. These should render visually distinct in the editor so you can see at a glance what's variable vs fixed.</div>
+      </div>
+      <div class="zone purple">
+        <div class="zone-title">Zone 3 — AI Generation Blocks</div>
+        <div class="zone-desc">Marked sections where <strong>the AI writes something unique for each business</strong>, guided by a prompt you write. Typically a single paragraph — a genuine acknowledgement of the owner's specific business, or a reference to something notable about what they've built. Each block has a prompt attached that you control and can refine over time.</div>
+      </div>
+    </div>
+
+    <div class="box box-amber">Keep AI Generation Blocks short and tightly prompted. One paragraph per block maximum. The more constrained the prompt, the more consistent the output quality across thousands of businesses.</div>
+
+
+    <!-- ══ MERGE TAGS ══ -->
+    <h2 id="merge-tags" class="anchor">Merge Tags</h2>
+
+    <p>Merge tags are the simplest form of personalisation and should be built and validated first. They pull structured data from the existing database — no inference, no AI, no risk of getting something wrong.</p>
+
+    <p>Antigravity should look at the existing database schema and determine the full set of fields worth exposing as merge tags. At minimum, the useful ones are:</p>
+
+    <table class="cmp">
+      <thead><tr><th>Category</th><th>Examples</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Owner</td><td>First name, full name</td><td>contacts table — is_owner = true</td></tr>
+        <tr><td>Business</td><td>Business name, city, state, vertical, years operating</td><td>businesses + classifications</td></tr>
+        <tr><td>Reputation</td><td>Star rating, review count, rating descriptor</td><td>businesses.rating / review_count</td></tr>
+        <tr><td>Financial signal</td><td>SBA loan year (if available)</td><td>sba_loans match</td></tr>
+        <tr><td>Sender</td><td>Your name, your phone, your email</td><td>Authenticated user / hardcoded until auth is wired</td></tr>
+        <tr><td>Sequence</td><td>Letter number, days since last letter</td><td>email_threads sequence logic</td></tr>
+      </tbody>
+    </table>
+
+    <p>In the editor, merge tags should render as visually distinct chips — highlighted, clearly not plain text — so you can see the template structure at a glance. In the preview, they resolve to their actual values for the selected business.</p>
+
+
+    <!-- ══ AI BLOCKS ══ -->
+    <h2 id="ai-blocks" class="anchor">AI Generation Blocks</h2>
+
+    <p>An AI block is a section of the template where you write a <strong>prompt</strong> rather than copy. When the letter is generated for a specific business, the AI reads that prompt along with everything Acquira knows about the business and writes something genuine for that owner.</p>
+
+    <p>The prompt you write for a block is the most important thing in the whole template. It should be specific about:</p>
+
+    <ul>
+      <li><strong>What the AI should acknowledge</strong> — the business's longevity, their reputation, what they're known for</li>
+      <li><strong>What data it has available</strong> — the system passes the business context automatically, but noting which fields matter most focuses the output</li>
+      <li><strong>What tone to use</strong> — genuine and direct, not effusive or salesy</li>
+      <li><strong>What to avoid</strong> — no mentions of buying or selling the business in the personalised paragraph, no financial references</li>
+      <li><strong>Length constraint</strong> — 2–3 sentences maximum</li>
+    </ul>
+
+    <p>A well-written AI block prompt might look like: <em>"Write 2 sentences genuinely acknowledging this owner's business. Focus on how long they have been operating and what their reputation signals — high rating, review volume, or consistency. Sound like a person who actually looked them up, not a sales letter."</em></p>
+
+    <div class="box box-purple">Antigravity should decide how AI blocks are represented in the editor UI — whether as inline sections, side panels, or a different pattern. The key requirement is that the prompt is always visible and editable by the user, and the generated output is always distinguishable from fixed copy.</div>
+
+
+    <!-- ══ PREVIEW ══ -->
+    <h2 id="preview" class="anchor">Live Preview</h2>
+
+    <p>The template editor needs a live preview that shows what the letter will actually look like for a specific business. This is not optional — it is the primary quality control mechanism.</p>
+
+    <p>The preview should:</p>
+
+    <ul>
+      <li>Let you select any business from your CRM to preview against</li>
+      <li>Resolve all merge tags to real values for that business</li>
+      <li>Show the AI-generated blocks with actual generated content, not placeholder text</li>
+      <li>Make the AI-generated sections visually distinct so you can tell instantly what was written by you and what was written by the AI</li>
+      <li>Be <strong>editable</strong> — you should be able to tweak the AI output directly in the preview before approving it</li>
+    </ul>
+
+    <p>The ideal layout is two-column: template with prompts and tags on the left, resolved preview on the right. Editing the template on the left updates the right in real time for merge tags. AI blocks require a manual regenerate action since each generation is an API call.</p>
+
+    <hr>
+
+
+    <!-- ══ WHAT WORKS ══ -->
+    <div class="sec-label">Personalisation</div>
+    <h2 id="what-works" class="anchor">What Actually Works</h2>
+
+    <p>Not all personalisation is equal. Some signals genuinely move response rates. Others add noise without adding warmth. Based on what works in owner-operator outreach specifically:</p>
+
+    <h3>High value</h3>
+    <ul>
+      <li><strong>Longevity</strong> — acknowledging that someone has built something for 20+ years signals respect. Owners who have operated that long have deep identity tied to the business.</li>
+      <li><strong>Reputation</strong> — a high rating with hundreds of reviews is something an owner worked hard for. Mentioning it in a genuine (not flattering) way shows you looked.</li>
+      <li><strong>Specificity of service</strong> — referencing the specific vertical or specialisation rather than generic "your business" language. An HVAC owner knows immediately whether you understand what they do.</li>
+      <li><strong>Timing signals</strong> — if the business is hiring, recently expanded, or has been mentioned in local news, a reference to that is extraordinarily effective. It demonstrates active attention.</li>
+    </ul>
+
+    <h3>Medium value</h3>
+    <ul>
+      <li>City and neighbourhood — local awareness is good but not differentiating on its own</li>
+      <li>Review content references — mentioning specific themes from their reviews (e.g. "known for being reliable in emergencies") if the research panel has surfaced them</li>
+      <li>Business structure signals — if you know they're an LLC that's been registered since a specific year, that's a concrete anchor</li>
+    </ul>
+
+    <h3>Lower value than expected</h3>
+    <ul>
+      <li>Generic compliments — "your impressive business" or "your excellent reputation" reads as filler and owners can sense it</li>
+      <li>Overly detailed financial references — mentioning revenue estimates or SBA loans in an introduction letter is off-putting</li>
+      <li>Name repetition — using the owner's name more than once in a letter starts to feel like a sales script</li>
+    </ul>
+
+
+    <!-- ══ DATA SOURCES ══ -->
+    <h2 id="data-sources" class="anchor">Data Sources to Use for Personalisation</h2>
+
+    <p>The AI generation blocks should be fed context from these sources in priority order. Antigravity should wire the generation flow to pull from each available source automatically — the user should not have to specify which data to include.</p>
+
+    <table class="cmp">
+      <thead><tr><th>Source</th><th>What it contributes</th><th>Availability</th></tr></thead>
+      <tbody>
+        <tr><td>Research Panel</td><td><strong>Richest context.</strong> Owner name, news articles, job postings, SoS data, D&B signals, web narrative. Businesses with research data should generate noticeably better letters.</td><td>Only if research has been run for this business</td></tr>
+        <tr><td>CRM Record</td><td>Business name, vertical, city, rating, review count, years operating, website, employee count estimates, revenue estimates</td><td>Always available for in-CRM businesses</td></tr>
+        <tr><td>Contacts Table</td><td>Owner name, role, any notes you've added manually</td><td>If contacts have been added to this business</td></tr>
+        <tr><td>SBA Loans Match</td><td>Confirmation the business took an SBA loan, year, rough amount band — signals the business was financeable and growing at some point</td><td>If SBA import has been run</td></tr>
+        <tr><td>Email History</td><td>For follow-up letters: what was said in Letter 1, whether it was opened, how many days have passed</td><td>Available for Letters 2+ in a sequence</td></tr>
+        <tr><td>Google Reviews</td><td>Recent review text, recurring themes, owner response patterns</td><td>If Google Places refresh has been run</td></tr>
+      </tbody>
+    </table>
+
+    <div class="box box-teal">The more data sources available for a business, the richer the AI generation context. The system should silently degrade gracefully — if research hasn't been run, it uses what it has. It should never fail or produce a blank because one source is missing.</div>
+
+
+    <!-- ══ INTIMACY TIERS ══ -->
+    <h2 id="intimacy-tiers" class="anchor">The Intimacy Tier System</h2>
+
+    <p>Rather than a simple personal/impersonal toggle, the system should use <strong>three intimacy tiers</strong> that reflect how well you actually know the owner at the point of sending. Each tier controls which data is used in AI generation blocks and how personally the letter can address the recipient.</p>
+
+    <p>This matters because the right level of personalisation depends entirely on your relationship with the owner at that moment. A letter that reads as warm and researched to an engaged prospect reads as unsettling to a cold contact who has never heard of you. Tier selection is about matching the depth of the letter to the depth of the relationship.</p>
+
+    <section id="tier-detail" class="anchor">
+      <h3>The Three Tiers</h3>
+
+      <div class="tiers">
+        <div class="tier t1">
+          <div class="tier-label">
+            <div class="tier-num">Tier 1</div>
+            <div class="tier-name">Business Only</div>
+            <div class="tier-when">Cold outreach — you know the business, not the person</div>
+          </div>
+          <div class="tier-body">
+            Uses only public business-level signals. The letter acknowledges what they have built as a business — longevity, reputation, what they are known for in their vertical — without referencing the owner as an individual at all. The most conservative and appropriate choice for any business you have not spoken with or researched in depth.
+            <ul>
+              <li>Business name, vertical, city, years operating</li>
+              <li>Rating and review count as a reputation signal</li>
+              <li>Service area and specialisation</li>
+              <li>No owner name in the AI block — only in a merge tag if you have it</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="tier t2">
+          <div class="tier-label">
+            <div class="tier-num">Tier 2</div>
+            <div class="tier-name">Business + Owner</div>
+            <div class="tier-when">Research has been run — you know who built this</div>
+          </div>
+          <div class="tier-body">
+            Brings the owner into the letter as a person, but only through the lens of what they have built professionally. References their tenure, the fact that they have been the registered operator for a specific number of years, what their reviews reveal about how customers experience them. Feels personally written without being personally invasive.
+            <ul>
+              <li>Everything in Tier 1, plus:</li>
+              <li>Owner name used once, naturally</li>
+              <li>Years as operator / registered agent tenure</li>
+              <li>Notable themes from their reviews — reliability, expertise, responsiveness</li>
+              <li>Job postings or growth signals if research surfaced them</li>
+              <li>News or local press mentions about the business</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="tier t3">
+          <div class="tier-label">
+            <div class="tier-num">Tier 3</div>
+            <div class="tier-name">Full Context</div>
+            <div class="tier-when">Engaged prospect — you have spoken or have genuine personal context</div>
+          </div>
+          <div class="tier-body">
+            Reserved for owners you have had a call with, have meaningful notes on, or where you have genuine personal context that they would recognise and feel acknowledged by — not surveilled. This tier can reference something specific they told you, a local connection, a detail that signals you paid real attention. Used incorrectly it is the most off-putting. Used correctly it is the most effective.
+            <ul>
+              <li>Everything in Tier 2, plus:</li>
+              <li>Context from call notes or DD Agent input</li>
+              <li>Specific details the owner mentioned or that feel personally relevant</li>
+              <li>Local or community references if genuinely known</li>
+              <li>Only unlocks if call notes or contact notes exist for this business</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tier-blocks" class="anchor">
+      <h3>Tier-Aware AI Blocks</h3>
+
+      <p>Each AI generation block in a template has <strong>three prompt variants</strong> — one per tier. When the letter is generated, the system uses the prompt variant that matches the selected tier. You write all three versions when building the template. They can be very similar at Tier 1 and 2, with the meaningful difference at Tier 3.</p>
+
+      <p>Example of the same block at each tier for an HVAC outreach letter:</p>
+
+      <div class="prompt-example">
+        <strong>Tier 1 prompt — Business Only</strong>
+        "Write 2 sentences acknowledging this HVAC business. Focus on how long they have been operating and what their rating signals about the quality of their work. Do not reference the owner by name. Sound like someone who genuinely looked at their business."
+      </div>
+
+      <div class="prompt-example">
+        <strong>Tier 2 prompt — Business + Owner</strong>
+        "Write 2 sentences acknowledging what {{owner_name}} has built. Reference how long they have been operating, their reputation as shown by their rating and reviews, and if available any notable growth signals like job postings or news mentions. Make it feel like you specifically looked them up."
+      </div>
+
+      <div class="prompt-example">
+        <strong>Tier 3 prompt — Full Context</strong>
+        "Write 2–3 sentences acknowledging {{owner_name}} specifically. Draw on the call notes and any personal context available. Reference something concrete and genuine — not just business stats — that shows you paid real attention during your conversation or research. Keep it warm but not effusive."
+      </div>
+
+      <p>Antigravity should decide how the three-prompt structure is represented in the template editor. Options include a tabbed interface within the block, a simple dropdown to switch between tier prompts, or three collapsible fields. The key requirement is that all three prompts are visible and editable independently.</p>
+    </section>
+
+    <section id="tier-ux" class="anchor">
+      <h3>UX Behaviour — Selection and Auto-Suggestion</h3>
+
+      <p>The tier selection should appear at the point of generation — when you are about to generate a letter for a specific business, not at the template authoring stage. The template holds all three prompt variants; the tier is chosen per business per send.</p>
+
+      <p>The system should <strong>auto-suggest the appropriate tier</strong> based on what data is available for that business, but always let you override it. The logic is straightforward:</p>
+
+      <div class="unlock-table">
+        <div class="unlock-row">
+          <div class="unlock-cell">Condition</div>
+          <div class="unlock-cell">Auto-suggested tier</div>
+          <div class="unlock-cell">Notes</div>
+        </div>
+        <div class="unlock-row">
+          <div class="unlock-cell">No research, no contacts, no call notes</div>
+          <div class="unlock-cell">Tier 1</div>
+          <div class="unlock-cell">Default for all cold outreach. Safe floor.</div>
+        </div>
+        <div class="unlock-row">
+          <div class="unlock-cell">Research panel has been run OR owner name confirmed in contacts</div>
+          <div class="unlock-cell">Tier 2</div>
+          <div class="unlock-cell">Tier 2 unlocks automatically when research data exists.</div>
+        </div>
+        <div class="unlock-row">
+          <div class="unlock-cell">Call notes exist in DD Agent OR meaningful notes in contacts table</div>
+          <div class="unlock-cell">Tier 3</div>
+          <div class="unlock-cell">Tier 3 only available when personal context has been recorded.</div>
+        </div>
+        <div class="unlock-row">
+          <div class="unlock-cell">CRM stage is Engaged, NDA Signed, or later</div>
+          <div class="unlock-cell">Tier 3 suggested if available, else Tier 2</div>
+          <div class="unlock-cell">Pipeline stage is a strong signal of relationship depth.</div>
+        </div>
+      </div>
+
+      <p>Tiers that are not yet unlocked for a business should be visible but disabled — so you can see what would become available if you ran research or added call notes. This reinforces the relationship between data quality and letter quality.</p>
+
+      <div class="box box-amber">Tier 3 should never be available for businesses in the Identified or Contacted CRM stage, regardless of what data exists. The stage is the relationship signal — if you have not spoken with them yet, Tier 3 is structurally inappropriate and should remain locked.</div>
+
+      <p>In the generation preview, the selected tier should be clearly visible — a small badge showing which tier was used, so when you review the letter before approving it you always know what level of personalisation was applied. If you want to upgrade or downgrade, you can change the tier and regenerate the AI blocks in one click.</p>
+    </section>
+
+    <!-- ══ THE LINE ══ -->
+    <h2 id="the-line" class="anchor">Where to Draw the Line</h2>
+
+    <p>The intimacy tier system encodes the line structurally — Tier 1 never references the owner as an individual, Tier 3 is only available once a real relationship exists. But the underlying principle is worth stating plainly so it guides how prompts are written at each tier.</p>
+
+    <p>There is a meaningful difference between <em>researching a business</em> and <em>researching a person</em>. The first builds trust. The second is unsettling in a cold letter.</p>
+
+    <div class="box box-green"><strong>Safe to reference at any tier:</strong> How long the business has been operating. Their rating and reputation. Their service area. Their vertical and specialisation. That they are locally established. That they employ people in the community. Anything visible as a business operator in the normal course of commerce.</div>
+
+    <div class="box box-amber"><strong>Safe to reference at Tier 2 and above only:</strong> The owner's name. Their tenure as the registered operator. Specific themes from customer reviews. Job postings or growth signals. Local news about the business. These are personal but professional — they reference the owner through the lens of what they have built.</div>
+
+    <div class="box box-red"><strong>Never reference, at any tier:</strong> LinkedIn profile details. Personal hobbies or interests sourced from social media. Home address or personal address. Family information. Anything that signals you researched them as an individual rather than as a business operator. Even if the data is technically public, it will feel invasive. Tier 3 is for context the owner gave you directly — not for personal data you found yourself.</div>
+
+    <p>The test at every tier: would the owner feel flattered that you did your homework on their business, or would they feel watched? The first is good. The second ends the conversation.</p>
+
+    <hr>
+
+
+    <!-- ══ FLOW ══ -->
+    <div class="sec-label">Generation</div>
+    <h2 id="flow" class="anchor">Per-Business Generation Flow</h2>
+
+    <p>When you generate a letter for a specific business, the experience should feel fast and deliberate — not like waiting for a machine. The conceptual flow is:</p>
+
+    <div class="phases">
+      <div class="phase">
+        <div class="phase-label">Step 1<span>Gather context</span></div>
+        <div class="phase-body">The system silently assembles everything it knows about the business — database fields, research panel output if available, email history for follow-up letters. You don't see this step. It just happens.</div>
+      </div>
+      <div class="phase">
+        <div class="phase-label">Step 2<span>Fill merge tags</span></div>
+        <div class="phase-body">All merge tags resolve instantly from the database. No AI call needed. The owner's name, the business name, years operating, rating — all filled in a fraction of a second.</div>
+      </div>
+      <div class="phase">
+        <div class="phase-label">Step 3<span>Generate AI blocks</span></div>
+        <div class="phase-body">Each AI block makes a single Claude API call with the block's prompt plus the assembled context. Blocks can generate in parallel if there are multiple. This is the step that takes a few seconds.</div>
+      </div>
+      <div class="phase">
+        <div class="phase-label">Step 4<span>Show preview</span></div>
+        <div class="phase-body">The full assembled letter appears in the preview pane. AI-generated sections are visually marked. You can read it, edit any part, regenerate specific blocks if they miss the mark.</div>
+      </div>
+      <div class="phase">
+        <div class="phase-label">Step 5<span>Approve or edit</span></div>
+        <div class="phase-body">You approve the letter as-is or edit it inline. On approval it enters the compose queue as a draft — ready to send from the Compose tab with one click, or scheduled for a specific date.</div>
+      </div>
+    </div>
+
+
+    <!-- ══ RESEARCH LINK ══ -->
+    <h2 id="research-link" class="anchor">Research Integration</h2>
+
+    <p>The Templates tab and the Research Panel are the two most important features in Acquira for improving outreach quality, and they should be connected.</p>
+
+    <p>When generating a letter for a business that has research data, the AI generation prompt should automatically include the research output — specifically the narrative summary, any news articles found, job posting signals, and confirmed owner name. The user should not have to do anything to make this happen — it should be automatic and silent.</p>
+
+    <p>The practical effect: businesses you have researched will produce letters with more genuine, specific content. Businesses you haven't researched will produce letters that rely only on structured database fields — still personalised, but less rich.</p>
+
+    <p>This creates a natural workflow incentive: <strong>research a business before launching outreach to them.</strong> The better your research, the better your letter. The better your letter, the higher your response rate.</p>
+
+    <div class="box box-teal">The letter generation UI should make this visible. A small indicator on the generation preview — something like <strong>'Research data available — using 6 enrichment signals'</strong> vs <strong>'No research data — using database fields only'</strong> — shows you the quality difference at a glance and gives you a reason to run research first on businesses you're serious about.</div>
+
+
+    <!-- ══ QUALITY ══ -->
+    <h2 id="quality" class="anchor">Quality Control</h2>
+
+    <p>The system needs a few mechanisms to catch bad output before it reaches an owner's inbox.</p>
+
+    <h3>Hallucination guard</h3>
+    <p>The AI should only be allowed to reference facts that were passed to it in the context. It should not invent details about a business it wasn't given. Antigravity should prompt the AI blocks in a way that makes this explicit — the prompt should instruct the AI to stick to provided information and not infer or embellish.</p>
+
+    <h3>Merge tag fallback</h3>
+    <p>If a merge tag field is empty for a particular business — no owner name in the contacts table, no years-in-business data — the letter should either use a sensible fallback (e.g. "your team" instead of "{{owner_name}}") or flag the gap visually in the preview so you know before approving. It should never send a letter with a visible unfilled tag like <code>{{owner_name}}</code>.</p>
+
+    <h3>Tone consistency check</h3>
+    <p>A light-touch mechanism to flag AI-generated content that reads obviously off-brand — too effusive, too salesy, or clearly hallucinated. Antigravity can decide how to implement this — whether as a simple prompt instruction, a secondary check, or just good initial prompting. The goal is that the generated paragraph feels like you could have written it.</p>
+
+    <h3>Edit and remember</h3>
+    <p>When you edit an AI-generated paragraph in the preview, the system should optionally allow you to save that edit as an example of good output for that type of business. Over time, this creates a feedback loop that improves generation quality for similar businesses in the same vertical.</p>
+
+    <hr>
+
+
+    <!-- ══ SEQUENCES ══ -->
+    <div class="sec-label">Structure</div>
+    <h2 id="sequences" class="anchor">Sequences &amp; Cadences</h2>
+
+    <p>Templates don't exist in isolation — they belong to sequences. A sequence is a multi-letter cadence: Letter 1 is an introduction, Letter 2 is a follow-up, Letter 3 is a final touch. Each letter has its own template, its own tone, and its own AI block prompts.</p>
+
+    <p>The Templates tab should allow you to group templates into sequences and preview the full cadence end-to-end for a specific business. When reviewing a sequence, you should be able to ask: do these three letters tell a coherent story? Does the personalisation feel consistent or repetitive across all three? Does the tone shift appropriately from warm introduction to direct follow-up?</p>
+
+    <h3>Letter-level differences to enforce</h3>
+    <ul>
+      <li><strong>Letter 1</strong> — introduces who you are, genuine acknowledgement of their business, soft call to action. Longest letter. AI block focused on the business acknowledgement.</li>
+      <li><strong>Letter 2</strong> — shorter, references that you wrote previously (use a merge tag for days since Letter 1), reiterates interest, direct call to action. AI block can be minimal or absent.</li>
+      <li><strong>Letter 3</strong> — shortest. Final reach out. Direct and respectful. Typically no AI block — just your fixed copy and merge tags.</li>
+    </ul>
+
+    <div class="box box-amber">The AI generation block prompts for Letter 2 and Letter 3 should be different from Letter 1. A follow-up letter that sounds as warm and detailed as the introduction reads as if you forgot you already wrote to them. Sequence awareness matters.</div>
+
+
+    <!-- ══ LIBRARY ══ -->
+    <h2 id="library" class="anchor">Template Library</h2>
+
+    <p>The template library is the left-hand list of all templates grouped by sequence. It is not the focus of this spec — the editing experience is — but it should be functional and scannable.</p>
+
+    <p>Each template in the list should show its name, which sequence it belongs to, which letter number it is, and an active/inactive status. Active templates are available in the compose queue. Inactive templates are archived but preserved.</p>
+
+    <p>You should be able to duplicate a template as a starting point for a new one — especially useful when creating a new vertical variant of an existing letter.</p>
+
+    <hr>
+
+
+    <!-- ══ PHASES ══ -->
+    <div class="sec-label">Build</div>
+    <h2 id="phases" class="anchor">Build Phases</h2>
+
+    <p>Build in this order. Each phase is independently useful — don't wait for the whole feature to be complete before getting value from the early phases.</p>
+
+    <div class="phases">
+      <div class="phase">
+        <div class="phase-label">Phase 1<span>Foundation</span></div>
+        <div class="phase-body"><strong>Template editor with fixed copy and merge tags only.</strong> No AI yet. Build the editor, the merge tag system, the template library list, and the live preview. This alone is a meaningful improvement over whatever is currently being used for outreach copy.</div>
+      </div>
+      <div class="phase">
+        <div class="phase-label">Phase 2<span>AI blocks</span></div>
+        <div class="phase-body"><strong>Add AI generation blocks.</strong> Single block per template to start — the personalised business acknowledgement paragraph. Wire the generation flow, build the preview with AI content marked distinctly, enable inline editing before queue approval. Validate output quality on a sample of businesses before scaling.</div>
+      </div>
+      <div class="phase">
+        <div class="phase-label">Phase 3<span>Intimacy tiers</span></div>
+        <div class="phase-body"><strong>Add the three-tier system to every AI block.</strong> Each block gets Tier 1, Tier 2, and Tier 3 prompt variants. Build the tier selector in the generation UI with auto-suggestion logic based on available data and CRM stage. Add the tier badge to the generation preview. Wire the Tier 3 lock to CRM stage — Identified and Contacted stages cannot use Tier 3 regardless of data availability.</div>
+      </div>
+      <div class="phase">
+        <div class="phase-label">Phase 4<span>Research integration</span></div>
+        <div class="phase-body"><strong>Connect the Research Panel data.</strong> When research has been run for a business, automatically include it in the AI generation context. Add the research data availability indicator to the generation preview. Tier 2 auto-unlocks when research data exists. This is when the quality gap between researched and unresearched businesses becomes visible.</div>
+      </div>
+      <div class="phase">
+        <div class="phase-label">Phase 5<span>Sequence awareness</span></div>
+        <div class="phase-body"><strong>Sequence-level preview and follow-up letter logic.</strong> Wire email history into Letter 2 and Letter 3 generation so they reference prior contact correctly. Add the full-cadence preview view. At this point the system is genuinely differentiated.</div>
+      </div>
+    </div>
+
+
+    <!-- ══ DECISIONS ══ -->
+    <h2 id="decisions" class="anchor">Decisions Left to Antigravity</h2>
+
+    <p>The following are intentionally left open. Antigravity should review the existing database schema, the current Email Hub implementation, and the rest of the Acquira codebase and make the best call given full context.</p>
+
+    <ul>
+      <li><strong>Editor pattern</strong> — whether to use a rich text editor, a structured block editor, or a plain textarea with syntax highlighting for merge tags and AI blocks. The right answer depends on the existing component library and what renders cleanly in the current stack.</li>
+      <li><strong>AI block representation</strong> — how AI blocks are visually distinguished in the editor and preview, and whether they are inline or in a separate panel.</li>
+      <li><strong>Merge tag fallback rules</strong> — the specific fallback text for each merge tag when the value is missing. Antigravity knows the database better than this spec does.</li>
+      <li><strong>Template storage schema</strong> — how templates and their AI block prompts are stored in Supabase. The conceptual requirement is that the prompt is stored alongside the template content and is editable.</li>
+      <li><strong>Generation API pattern</strong> — whether AI block generation happens client-side or via a Supabase Edge Function. Either can work; choose based on CORS constraints and the pattern already established in the codebase.</li>
+      <li><strong>Queue integration</strong> — the exact mechanism for moving an approved generated letter into the compose queue. This should reuse whatever pattern the Compose tab already uses for adding emails to the queue.</li>
+    </ul>
+
+    <div class="box box-teal">The single most important thing to get right is the editor experience — specifically the two-column template-and-preview layout. Everything else can be iterated. If reviewing a generated letter feels slow, clunky, or requires too many clicks to approve, the feature will not get used. Speed of review is the key UX constraint.</div>
+
+    <div class="footer">
+      End of specification &nbsp;·&nbsp; Acquira Email Templates v1.1 &nbsp;·&nbsp; April 2026
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const navLinks = document.querySelectorAll('.nav-a');
+  const sections = document.querySelectorAll('.anchor');
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const id = e.target.id;
+        navLinks.forEach(l => l.classList.toggle('on', l.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { rootMargin: '-15% 0px -75% 0px' });
+
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
