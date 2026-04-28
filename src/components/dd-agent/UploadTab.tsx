@@ -267,10 +267,12 @@ export function UploadTab({ onMemoCreated, onOpenMemo }: {
         disabled={!canGenerate}
         className="w-full py-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Analysing…</> : 'Generate Memo'}
+        {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> {generatingStage || 'Analysing…'}</> : mode === 'new_from_cim' ? 'Add to CRM & Generate Memo' : 'Generate Memo'}
       </button>
       {generating && (
-        <p className="text-center text-xs text-text-tertiary mt-2 italic">This usually takes 20–40 seconds</p>
+        <p className="text-center text-xs text-text-tertiary mt-2 italic">
+          {mode === 'new_from_cim' ? 'CIM extraction + memo generation usually takes 40–90 seconds' : 'This usually takes 20–40 seconds'}
+        </p>
       )}
 
       {/* Area 5 — Prior analyses */}
