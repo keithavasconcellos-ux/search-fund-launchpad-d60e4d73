@@ -83,6 +83,10 @@ export default function AnalyticsTab() {
 
   return (
     <div className="p-6 max-w-4xl overflow-y-auto">
+      <div className="mb-4 px-3 py-2 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-200 font-mono text-[11px] uppercase tracking-wider">
+        Showing placeholder data — wire up real analytics when ready
+      </div>
+
       {/* Filters */}
       <div className="flex items-center gap-3 mb-6">
         <div className="flex gap-1">
