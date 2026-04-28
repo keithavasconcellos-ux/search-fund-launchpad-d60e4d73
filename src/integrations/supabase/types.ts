@@ -516,6 +516,7 @@ export type Database = {
       }
       email_templates: {
         Row: {
+          ai_blocks: Json
           body_template: string
           created_at: string
           id: string
@@ -527,6 +528,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_blocks?: Json
           body_template: string
           created_at?: string
           id?: string
@@ -538,6 +540,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_blocks?: Json
           body_template?: string
           created_at?: string
           id?: string
