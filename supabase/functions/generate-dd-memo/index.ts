@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
     // Pull business + classification for AI context
     const { data: biz, error: bizErr } = await admin
       .from("businesses")
-      .select("id, name, address, city, state, website, rating, review_count, employee_count, founded_year, revenue_est_low, revenue_est_high")
+      .select("id, name, address, county, state, website, rating, review_count, employee_count, founded_year, revenue_est_low, revenue_est_high")
       .eq("id", business_id)
       .single();
     if (bizErr || !biz) return json({ error: "business not found" }, 404);
