@@ -211,7 +211,7 @@ export default function Dashboard() {
       <div className="flex items-end justify-between mb-9">
         <div>
           <h1 className="font-display italic text-[36px] leading-none text-foreground tracking-tight">
-            Good morning, J.
+            Good morning, Keith
           </h1>
           <div className="flex items-center gap-2 mt-1.5 font-mono text-[10px] text-text-tertiary uppercase tracking-[1.5px]">
             <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-success">

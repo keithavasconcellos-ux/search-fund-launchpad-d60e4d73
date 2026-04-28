@@ -67,10 +67,10 @@ export default function AppSidebar() {
       <div className="px-3 py-4 border-t border-border">
         <div className="flex items-center gap-2.5 px-2.5">
           <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-medium">
-            JD
+            KV
           </div>
           <div className="flex-1">
-            <div className="text-xs text-foreground font-medium">J. Davidson</div>
+            <div className="text-xs text-foreground font-medium">Keith Vasconcellos</div>
             <div className="font-mono text-[10px] text-text-tertiary">Day 142</div>
           </div>
           <button
