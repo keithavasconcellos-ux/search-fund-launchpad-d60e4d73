@@ -804,6 +804,12 @@ function SosTab({ biz, onUpdate }: { biz: any; onUpdate: () => void }) {
       {/* Cached data display */}
       {sosData && (
         <div className="divide-y divide-border rounded-lg border border-border overflow-hidden">
+          {sosData.matched_name && sosData.matched_name.toUpperCase() !== biz.name.toUpperCase() && (
+            <div className="flex items-start px-4 py-2.5 bg-warning/10">
+              <span className="w-28 shrink-0 font-mono text-xs text-warning">Matched As</span>
+              <span className="text-xs text-warning font-medium">{sosData.matched_name}</span>
+            </div>
+          )}
           <SosRow label="Entity Type" value={sosData.entity_type} />
           <SosRow label="Status" value={
             sosData.status ? (

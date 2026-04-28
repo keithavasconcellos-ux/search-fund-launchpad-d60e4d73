@@ -12,6 +12,7 @@ export interface SosData {
   dba_names: string[];
   naics_code: string | null;
   source_url: string | null;
+  matched_name: string | null;   // registry name that was matched — shown in UI for verification
   state: string;
   fetched_at: string;
 }
@@ -66,11 +67,18 @@ const CT_AGENTS_ID = 'qh2m-n44y';
 async function fetchCtData(biz: BizParams): Promise<SosData | null> {
   const city = biz.city ? biz.city : null;
 
-  // Step 1: search Business Master by name + optional city filter
-  // Socrata $q does full-text search; business_city equality filter narrows results.
-  let masterUrl = `${CT_BASE}/${CT_MASTER_ID}.json?$q=${encodeURIComponent(biz.name)}&$limit=20`;
+  // Step 1: Cast a wide net with a loose $q search.
+  // Use the first 1-2 significant words of the name (skip articles/suffixes like LLC, The).
+  // This maximises recall — the scoring step below filters down to the best match.
+  const STOP_WORDS = new Set(['the', 'a', 'an', 'of', 'and', 'llc', 'inc', 'corp', 'ltd', 'co']);
+  const nameTokens = normalize(biz.name)
+    .split(' ')
+    .filter(w => w.length > 2 && !STOP_WORDS.has(w));
+  // Use up to the first 2 meaningful tokens for the $q search
+  const searchTerm = nameTokens.slice(0, 2).join(' ') || biz.name;
+
+  let masterUrl = `${CT_BASE}/${CT_MASTER_ID}.json?$q=${encodeURIComponent(searchTerm)}&$limit=30`;
   if (city) {
-    // Add a city filter — Socrata WHERE clause; UPPER() for case-insensitive match
     masterUrl += `&$where=${encodeURIComponent(`upper(business_city)='${city.toUpperCase()}'`)}`;
   }
 
@@ -78,16 +86,19 @@ async function fetchCtData(biz: BizParams): Promise<SosData | null> {
   if (!masterRes.ok) throw new Error(`CT Socrata error: ${masterRes.status}`);
   let masterRows: any[] = await masterRes.json();
 
-  // If city filter returned nothing, fall back without city (maybe address mismatch)
+  // If city-filtered search returned nothing, retry without city filter
   if (masterRows.length === 0 && city) {
-    const fallbackUrl = `${CT_BASE}/${CT_MASTER_ID}.json?$q=${encodeURIComponent(biz.name)}&$limit=20`;
+    const fallbackUrl = `${CT_BASE}/${CT_MASTER_ID}.json?$q=${encodeURIComponent(searchTerm)}&$limit=30`;
     const fallbackRes = await fetch(fallbackUrl);
     if (fallbackRes.ok) masterRows = await fallbackRes.json();
   }
 
   if (masterRows.length === 0) return null;
 
-  // Step 2: score candidates — name similarity + city match bonus
+  // Step 2: score every candidate.
+  // Strategy: city is the anchor when available. Name is a tiebreaker.
+  // A city-only match (score=2) is accepted — the city filter already did the heavy lifting.
+  // No city available → require at least a loose name match (score > 0).
   const targetName = normalize(biz.name);
   const targetCity = city ? normalize(city) : null;
 
@@ -95,21 +106,31 @@ async function fetchCtData(biz: BizParams): Promise<SosData | null> {
     const rowName = normalize(r.business_name ?? '');
     const rowCity = normalize(r.business_city ?? '');
 
-    // Name score: exact after normalization = 3, contains target = 2, target contains row = 1, else 0
+    // Name score — intentionally loose to match variations like "Paw Spa LLC" vs "Paw Spa"
     let nameScore = 0;
     if (rowName === targetName) nameScore = 3;
     else if (rowName.includes(targetName)) nameScore = 2;
-    else if (targetName.includes(rowName)) nameScore = 1;
+    else if (targetName.includes(rowName) && rowName.length > 3) nameScore = 2;
+    else {
+      // Token overlap: how many name words appear in the registry name?
+      const targetTokens = targetName.split(' ').filter(w => w.length > 2 && !STOP_WORDS.has(w));
+      const overlapCount = targetTokens.filter(w => rowName.includes(w)).length;
+      if (overlapCount > 0) nameScore = overlapCount; // 1 per overlapping word
+    }
 
-    // City score: exact city match = 2, else 0
-    let cityScore = 0;
-    if (targetCity && rowCity === targetCity) cityScore = 2;
+    // City score — binary: 3 if city matches exactly, 0 otherwise
+    const cityScore = (targetCity && rowCity === targetCity) ? 3 : 0;
 
-    return { ...r, _score: nameScore + cityScore };
+    return { ...r, _nameScore: nameScore, _cityScore: cityScore, _score: nameScore + cityScore };
   });
 
-  // Must have at least some name similarity
-  const candidates = scored.filter(r => r._score > 0).sort((a, b) => b._score - a._score);
+  // Acceptance rule:
+  // - City known → accept any candidate with cityScore > 0 (city is our anchor)
+  // - No city    → require nameScore > 0 (at least a loose name match)
+  const minScore = targetCity ? 3 : 1; // city match alone (3) passes; no-city needs nameScore>0
+  const candidates = scored
+    .filter(r => r._score >= minScore)
+    .sort((a, b) => b._score - a._score);
   if (candidates.length === 0) return null;
 
   const best = candidates[0];
@@ -171,6 +192,7 @@ async function fetchCtData(biz: BizParams): Promise<SosData | null> {
     principal_address: principalAddress,
     dba_names: dbaNames,
     naics_code: best.naics_code ?? null,
+    matched_name: best.business_name ?? null,
     source_url: `https://service.ct.gov/business/s/onlinebusinesssearch?language=en_US`,
     state: 'CT',
     fetched_at: new Date().toISOString(),
