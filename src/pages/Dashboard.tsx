@@ -5,13 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { getPipelineFunnelCounts } from '@/lib/queries/dashboard';
 import { CRM_STAGE_LABELS, type CrmStage } from '@/types/acquira';
 
-const FUNNEL_STAGE_META: { stage: CrmStage; color: string }[] = [
-  { stage: 'identified',   color: 'hsl(var(--primary))' },
-  { stage: 'contacted',    color: 'hsl(var(--primary))' },
-  { stage: 'engaged',      color: 'hsl(var(--purple))' },
-  { stage: 'nda_signed',   color: 'hsl(var(--warning))' },
-  { stage: 'cim_received', color: 'hsl(var(--destructive))' },
-  { stage: 'active_loi',   color: 'hsl(var(--destructive))' },
+const FUNNEL_STAGE_META: { stage: CrmStage; hsl: string }[] = [
+  { stage: 'identified',   hsl: 'var(--primary)' },
+  { stage: 'contacted',    hsl: 'var(--primary)' },
+  { stage: 'engaged',      hsl: 'var(--purple)' },
+  { stage: 'nda_signed',   hsl: 'var(--warning)' },
+  { stage: 'cim_received', hsl: 'var(--destructive)' },
+  { stage: 'active_loi',   hsl: 'var(--destructive)' },
 ];
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -195,7 +195,7 @@ export default function Dashboard() {
       count,
       // Keep a minimum so the count label stays readable on tiny bars
       width: count > 0 ? Math.max(pct, 6) : 0,
-      color: m.color,
+      hsl: m.hsl,
     };
   });
 
@@ -265,10 +265,10 @@ export default function Dashboard() {
                     className="h-full rounded flex items-center px-2.5 transition-all duration-500"
                     style={{
                       width: `${f.width}%`,
-                      background: `linear-gradient(90deg, ${f.color}25, ${f.color}55)`,
+                      background: `linear-gradient(90deg, hsl(${f.hsl} / 0.18), hsl(${f.hsl} / 0.45))`,
                     }}
                   >
-                    <span className="font-mono text-[11px] font-medium" style={{ color: f.color }}>
+                    <span className="font-mono text-[11px] font-medium" style={{ color: `hsl(${f.hsl})` }}>
                       {f.count}
                     </span>
                   </div>
