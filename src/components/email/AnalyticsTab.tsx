@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getEmailAnalytics, getDistinctVerticals } from '@/lib/queries/email-hub'
+import { getDistinctVerticals, type EmailAnalytics } from '@/lib/queries/email-hub'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const TIME_RANGES = [
@@ -9,6 +9,54 @@ const TIME_RANGES = [
   { label: 'Last 90d', value: 90 },
   { label: 'All time', value: 3650 },
 ]
+
+const PLACEHOLDER_INDUSTRIES = [
+  { name: 'HVAC', baseRate: 14.2 },
+  { name: 'Plumbing', baseRate: 11.8 },
+  { name: 'Electrical', baseRate: 9.4 },
+  { name: 'Landscaping', baseRate: 7.6 },
+  { name: 'Auto Repair', baseRate: 6.1 },
+  { name: 'Roofing', baseRate: 5.3 },
+]
+
+function buildPlaceholder(days: number, vertical: string, letter: string): EmailAnalytics {
+  // Scale volume with the selected time range
+  const perDay = 42
+  const baseSent = Math.round(perDay * Math.min(days, 365))
+  const verticalMultiplier = vertical === '__all__' ? 1 : 0.35
+  const letterMultiplier = letter === '__all__' ? 1 : 0.28
+  const sent = Math.max(12, Math.round(baseSent * verticalMultiplier * letterMultiplier))
+
+  const opened = Math.round(sent * 0.46)
+  const replied = Math.round(sent * 0.092)
+  const positiveReplies = Math.round(replied * 0.38)
+  const crmEntered = Math.round(positiveReplies * 0.72)
+
+  const industries = (vertical === '__all__'
+    ? PLACEHOLDER_INDUSTRIES
+    : PLACEHOLDER_INDUSTRIES.filter((i) => i.name.toLowerCase() === vertical.toLowerCase()).concat(
+        PLACEHOLDER_INDUSTRIES.slice(0, 3),
+      )
+  ).slice(0, 6)
+
+  const byIndustry = industries.map((i) => {
+    const iSent = Math.max(8, Math.round(sent / industries.length))
+    const rate = Math.round(i.baseRate * 10) / 10
+    const iReplied = Math.round((iSent * rate) / 100)
+    return { name: i.name, sent: iSent, replied: iReplied, rate }
+  })
+
+  const letters = letter === '__all__' ? [1, 2, 3, 4, 5] : [parseInt(letter)]
+  const letterRates: Record<number, number> = { 1: 4.8, 2: 8.2, 3: 11.6, 4: 9.1, 5: 6.3 }
+  const byLetter = letters.map((n) => {
+    const lSent = Math.max(6, Math.round(sent / letters.length))
+    const rate = letterRates[n] ?? 7
+    const lReplied = Math.round((lSent * rate) / 100)
+    return { name: `Letter ${n}`, sent: lSent, replied: lReplied, rate }
+  })
+
+  return { sent, opened, replied, positiveReplies, crmEntered, byIndustry, byLetter }
+}
 
 export default function AnalyticsTab() {
   const [days, setDays] = useState(30)
@@ -20,19 +68,10 @@ export default function AnalyticsTab() {
     queryFn: getDistinctVerticals,
   })
 
-  const { data: analytics, isLoading } = useQuery({
-    queryKey: ['email-analytics', days, vertical, letter],
-    queryFn: () =>
-      getEmailAnalytics({
-        days,
-        vertical: vertical === '__all__' ? undefined : vertical,
-        letterNumber: letter === '__all__' ? undefined : parseInt(letter),
-      }),
-  })
-
-  if (isLoading || !analytics) {
-    return <div className="flex items-center justify-center h-64 text-muted-foreground font-mono text-sm">Loading analytics…</div>
-  }
+  const analytics = useMemo(
+    () => buildPlaceholder(days, vertical, letter),
+    [days, vertical, letter],
+  )
 
   const funnelSteps = [
     { label: 'Sent', count: analytics.sent, rate: 100 },
