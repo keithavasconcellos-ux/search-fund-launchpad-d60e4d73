@@ -5,13 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { getPipelineFunnelCounts } from '@/lib/queries/dashboard';
 import { CRM_STAGE_LABELS, type CrmStage } from '@/types/acquira';
 
-const FUNNEL_STAGE_META: { stage: CrmStage; color: string }[] = [
-  { stage: 'identified',   color: 'hsl(var(--primary))' },
-  { stage: 'contacted',    color: 'hsl(var(--primary))' },
-  { stage: 'engaged',      color: 'hsl(var(--purple))' },
-  { stage: 'nda_signed',   color: 'hsl(var(--warning))' },
-  { stage: 'cim_received', color: 'hsl(var(--destructive))' },
-  { stage: 'active_loi',   color: 'hsl(var(--destructive))' },
+const FUNNEL_STAGE_META: { stage: CrmStage; hsl: string }[] = [
+  { stage: 'identified',   hsl: 'var(--primary)' },
+  { stage: 'contacted',    hsl: 'var(--primary)' },
+  { stage: 'engaged',      hsl: 'var(--purple)' },
+  { stage: 'nda_signed',   hsl: 'var(--warning)' },
+  { stage: 'cim_received', hsl: 'var(--destructive)' },
+  { stage: 'active_loi',   hsl: 'var(--destructive)' },
 ];
 
 // ──────────────────────────────────────────────────────────────────────────────
