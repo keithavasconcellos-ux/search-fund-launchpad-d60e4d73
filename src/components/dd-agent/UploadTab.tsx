@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Upload, FileText, X, Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Upload, FileText, X, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   getCrmBusinessesForLinking,
   getMemosForBusiness,
   generateMemo,
+  extractCimBusiness,
   type DDMemo,
 } from '@/lib/queries/dd-agent';
 import { ScorecardDots } from './AnacapaScorecard';
 
-type Mode = 'cim' | 'call_notes' | 'name_only';
+type Mode = 'cim' | 'call_notes' | 'name_only' | 'new_from_cim';
 
 export function UploadTab({ onMemoCreated, onOpenMemo }: {
   onMemoCreated: (memo: DDMemo) => void;
@@ -25,7 +27,10 @@ export function UploadTab({ onMemoCreated, onOpenMemo }: {
   const [notes, setNotes] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generatingStage, setGeneratingStage] = useState<string>('');
+  const [newBusinessName, setNewBusinessName] = useState('');
   const [priorMemos, setPriorMemos] = useState<DDMemo[]>([]);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     getCrmBusinessesForLinking()
