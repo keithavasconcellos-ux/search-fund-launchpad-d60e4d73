@@ -212,6 +212,34 @@ async function fetchCtData(biz: BizParams): Promise<SosData | null> {
   };
 }
 
+// ─── Edge Function proxy (MA, RI) ────────────────────────────────────────────
+
+async function fetchViaEdgeFunction(state: string, biz: BizParams): Promise<SosData | null> {
+  const { data, error } = await supabase.functions.invoke('sos-lookup', {
+    body: { state, name: biz.name, city: biz.city ?? null },
+  });
+
+  if (error) throw new Error(`Edge Function error: ${error.message}`);
+  if (!data?.data) return null;
+
+  // Edge Function returns SosResult which matches SosData shape
+  const r = data.data;
+  return {
+    entity_type: r.entity_type ?? null,
+    formation_date: r.formation_date ?? null,
+    status: r.status ?? null,
+    registered_agent: r.registered_agent ?? null,
+    officers: r.officers ?? [],
+    principal_address: r.principal_address ?? null,
+    dba_names: r.dba_names ?? [],
+    naics_code: r.naics_code ?? null,
+    matched_name: r.matched_name ?? null,
+    source_url: r.source_url ?? null,
+    state,
+    fetched_at: new Date().toISOString(),
+  };
+}
+
 // ─── Main entrypoint ──────────────────────────────────────────────────────────
 
 export async function fetchSosData(biz: BizParams): Promise<SosData | null> {
@@ -223,7 +251,10 @@ export async function fetchSosData(biz: BizParams): Promise<SosData | null> {
     case 'CT':
       result = await fetchCtData(biz);
       break;
-    // MA, RI → Phase 2 (Edge Function)
+    case 'MA':
+    case 'RI':
+      result = await fetchViaEdgeFunction(state, biz);
+      break;
     // NH, VT → Phase 3 (deep links only, no data returned)
     default:
       return null;

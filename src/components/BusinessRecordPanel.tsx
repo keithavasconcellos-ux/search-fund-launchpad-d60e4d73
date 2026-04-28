@@ -776,28 +776,20 @@ function SosTab({ biz, onUpdate }: { biz: any; onUpdate: () => void }) {
         </div>
       )}
 
-      {/* MA/RI coming soon notice (Phase 2) */}
-      {stateAbbr && EDGE_STATES.includes(stateAbbr.toUpperCase()) && (
-        <div className="rounded-lg bg-background-tertiary border border-border p-4 flex items-start gap-3">
-          <AlertCircle className="w-4 h-4 text-warning mt-0.5 shrink-0" />
-          <div>
-            <div className="text-sm text-foreground font-medium mb-0.5">{stateLabel} — Phase 2 (coming next)</div>
-            <div className="text-xs text-muted-foreground">
-              {stateLabel} lookup via server-side scraper is implemented in Phase 2.
-            </div>
-          </div>
-        </div>
-      )}
+      {/* MA/RI coming soon notice removed — Phase 2 active */}
 
-      {/* Fetch button (CT supported in Phase 1) */}
-      {stateAbbr && CT_STATES.includes(stateAbbr.toUpperCase()) && (
+      {/* Fetch button — CT (direct API), MA & RI (Edge Function) */}
+      {stateAbbr && (CT_STATES.includes(stateAbbr.toUpperCase()) || EDGE_STATES.includes(stateAbbr.toUpperCase())) && (
         <button
           onClick={handleFetch}
           disabled={loading}
           className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-60 transition-colors"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          {loading ? 'Fetching from CT registry…' : sosData ? 'Re-fetch SOS Data' : 'Fetch SOS Data'}
+          {loading
+            ? `Fetching from ${stateLabel} registry…`
+            : sosData ? 'Re-fetch SOS Data' : 'Fetch SOS Data'
+          }
         </button>
       )}
 
@@ -864,7 +856,7 @@ function SosTab({ biz, onUpdate }: { biz: any; onUpdate: () => void }) {
       )}
 
       {/* No data yet for supported state */}
-      {isSupported && stateAbbr && CT_STATES.includes(stateAbbr.toUpperCase()) && !sosData && !loading && (
+      {isSupported && !sosData && !loading && (
         <EmptyState text="No SOS data fetched yet — click the button above" />
       )}
     </div>
