@@ -38,8 +38,7 @@ const CRM_STAGES: { value: CrmStage; label: string }[] = [
   { value: 'engaged', label: 'Engaged' },
   { value: 'nda_signed', label: 'NDA Signed' },
   { value: 'cim_received', label: 'CIM Received' },
-  { value: 'loi_submitted', label: 'LOI Submitted' },
-  { value: 'closed', label: 'Closed' },
+  { value: 'active_loi', label: 'Active LOI' },
   { value: 'passed', label: 'Passed' },
 ]
 
@@ -49,8 +48,7 @@ const STAGE_COLORS: Record<string, string> = {
   engaged: 'bg-emerald-500/15 text-emerald-300',
   nda_signed: 'bg-violet-500/15 text-violet-300',
   cim_received: 'bg-amber-500/15 text-amber-300',
-  loi_submitted: 'bg-orange-500/15 text-orange-300',
-  closed: 'bg-primary/20 text-primary',
+  active_loi: 'bg-orange-500/15 text-orange-300',
   passed: 'bg-red-500/15 text-red-300',
 }
 
