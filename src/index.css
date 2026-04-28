@@ -84,6 +84,11 @@
 
   body {
     @apply bg-background text-foreground font-sans;
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.4) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.4) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-attachment: fixed;
   }
 }
 
@@ -93,5 +98,11 @@
   }
   .font-mono-data {
     font-family: 'Geist Mono', monospace;
+  }
+  .card-accent-top {
+    background-image:
+      linear-gradient(hsl(var(--background-tertiary)), hsl(var(--background-tertiary))) padding-box,
+      linear-gradient(90deg, transparent, hsl(var(--teal)), transparent) border-box;
+    border: 1px solid transparent;
   }
 }
