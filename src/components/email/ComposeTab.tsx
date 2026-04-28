@@ -157,6 +157,10 @@ const SENTIMENT_CONFIG = {
 export default function ComposeTab() {
   const [selectedBizId, setSelectedBizId] = useState<string | null>(null)
   const [expandedResponse, setExpandedResponse] = useState<number | null>(null)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
+  const [generatedSubject, setGeneratedSubject] = useState<string>('')
+  const [generatedBody, setGeneratedBody] = useState<string>('')
+  const [isGenerating, setIsGenerating] = useState(false)
 
   const { data: crmBusinesses = [], isLoading } = useQuery({
     queryKey: ['crm-compose-businesses'],
