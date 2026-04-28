@@ -1,4 +1,4 @@
-import { ArrowUp, Mail, MessageSquare, FileText, RefreshCw, Plus, Search, Send } from 'lucide-react';
+import { ArrowUp, Mail, MessageSquare, FileText, RefreshCw, Search, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -224,10 +224,6 @@ export default function Dashboard() {
           <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-background-tertiary border border-border text-muted-foreground font-mono text-[11px] hover:bg-background-quaternary hover:text-foreground transition-colors">
             <RefreshCw className="w-3 h-3" />
             Refresh
-          </button>
-          <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-primary text-primary-foreground font-mono text-[11px] font-semibold hover:bg-primary/90 transition-colors">
-            <Plus className="w-3 h-3" />
-            New Analysis
           </button>
         </div>
       </div>
