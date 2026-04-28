@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
       in_crm: true,
       crm_stage: "cim_received",
       review_status: "reviewed",
-      added_via: "manual_cim",
+      added_via: "manual",
       last_activity_at: new Date().toISOString(),
     };
 
