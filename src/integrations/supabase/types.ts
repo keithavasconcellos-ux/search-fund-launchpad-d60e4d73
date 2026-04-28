@@ -409,12 +409,17 @@ export type Database = {
       }
       dd_memos: {
         Row: {
+          additional_context: string | null
+          analysis_label: string | null
           business_id: string
+          confidence_level: string | null
           deal_breaker_fired: boolean
           export_format: string | null
           exported_at: string | null
           generated_at: string
           id: string
+          input_page_count: number | null
+          input_type: string | null
           investment_thesis: string | null
           model_used: string
           open_questions: string[] | null
@@ -426,12 +431,17 @@ export type Database = {
           version: number
         }
         Insert: {
+          additional_context?: string | null
+          analysis_label?: string | null
           business_id: string
+          confidence_level?: string | null
           deal_breaker_fired?: boolean
           export_format?: string | null
           exported_at?: string | null
           generated_at?: string
           id?: string
+          input_page_count?: number | null
+          input_type?: string | null
           investment_thesis?: string | null
           model_used?: string
           open_questions?: string[] | null
@@ -443,12 +453,17 @@ export type Database = {
           version?: number
         }
         Update: {
+          additional_context?: string | null
+          analysis_label?: string | null
           business_id?: string
+          confidence_level?: string | null
           deal_breaker_fired?: boolean
           export_format?: string | null
           exported_at?: string | null
           generated_at?: string
           id?: string
+          input_page_count?: number | null
+          input_type?: string | null
           investment_thesis?: string | null
           model_used?: string
           open_questions?: string[] | null

@@ -1,1 +1,4 @@
 project_id = "dzepmywtihvjgewdrynx"
+
+[functions.generate-dd-memo]
+verify_jwt = false
