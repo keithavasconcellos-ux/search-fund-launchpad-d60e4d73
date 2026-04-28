@@ -1,5 +1,6 @@
-import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Kanban, Library, Mail, FileSearch, Search } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Map, Kanban, Library, Mail, FileSearch, Search, LogOut } from 'lucide-react';
+import { signOut } from './auth/RequireAuth';
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -12,6 +13,12 @@ const navItems = [
 
 export default function AppSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleSignOut = () => {
+    signOut();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <aside className="fixed left-0 top-0 w-[240px] h-screen bg-background-secondary border-r border-border overflow-y-auto z-50 flex flex-col">
@@ -62,10 +69,18 @@ export default function AppSidebar() {
           <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-medium">
             JD
           </div>
-          <div>
+          <div className="flex-1">
             <div className="text-xs text-foreground font-medium">J. Davidson</div>
             <div className="font-mono text-[10px] text-text-tertiary">Day 142</div>
           </div>
+          <button
+            onClick={handleSignOut}
+            title="Sign out"
+            aria-label="Sign out"
+            className="p-1.5 rounded-md text-text-tertiary hover:text-foreground hover:bg-background-tertiary transition-colors"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </aside>
