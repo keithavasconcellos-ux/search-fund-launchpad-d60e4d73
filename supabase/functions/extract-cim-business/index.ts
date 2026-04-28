@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
       ebitda_verified: b.ebitda_margin_verified != null,
       in_crm: true,
       crm_stage: "cim_received",
-      review_status: "reviewed",
+      review_status: "target",
       added_via: "manual",
       last_activity_at: new Date().toISOString(),
     };
