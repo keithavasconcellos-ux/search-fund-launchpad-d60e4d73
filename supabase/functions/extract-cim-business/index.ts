@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
           customer_type: c.customer_type ?? null,
           geographic_scope: c.geographic_scope ?? null,
           years_in_business: c.years_in_business ?? null,
-          classified_by: "cim_extraction",
+          classified_by: "model",
           classification_confidence: extracted.confidence ?? "medium",
         });
       if (clsErr) {
