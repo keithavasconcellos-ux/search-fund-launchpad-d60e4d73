@@ -225,10 +225,6 @@ export default function Dashboard() {
             <RefreshCw className="w-3 h-3" />
             Refresh
           </button>
-          <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-primary text-primary-foreground font-mono text-[11px] font-semibold hover:bg-primary/90 transition-colors">
-            <Plus className="w-3 h-3" />
-            New Analysis
-          </button>
         </div>
       </div>
 
