@@ -157,7 +157,7 @@ ${block_prompt}`;
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
         ],
-        max_tokens: 350,
+        max_tokens: 800,
         temperature: 0.7,
       }),
     });
