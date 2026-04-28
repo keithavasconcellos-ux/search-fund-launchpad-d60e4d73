@@ -252,7 +252,7 @@ export default function Dashboard() {
           </CardLabel>
 
           <div className="space-y-2.5">
-            {FUNNEL.map((f) => (
+            {funnel.map((f) => (
               <div key={f.label} className="flex items-center gap-3">
                 <div className="font-mono text-[10px] text-muted-foreground w-24 text-right shrink-0">{f.label}</div>
                 <div className="flex-1 h-6 bg-background-tertiary rounded overflow-hidden">
