@@ -67,6 +67,27 @@ export default function BusinessRecordPanel({ businessId, onClose }: Props) {
     onSuccess: invalidateAll,
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      // Best-effort cleanup of related rows (no FK cascades defined)
+      await (supabase.from('activities') as any).delete().eq('business_id', id);
+      await (supabase.from('contacts') as any).delete().eq('business_id', id);
+      await (supabase.from('email_threads') as any).delete().eq('business_id', id);
+      await (supabase.from('dd_documents') as any).delete().eq('business_id', id);
+      await (supabase.from('dd_memos') as any).delete().eq('business_id', id);
+      await (supabase.from('business_classifications') as any).delete().eq('business_id', id);
+      await (supabase.from('scheduled_calls') as any).delete().eq('business_id', id);
+      const { error } = await supabase.from('businesses').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Business deleted');
+      invalidateAll();
+      onClose();
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Failed to delete'),
+  });
+
   if (!businessId) return null;
 
   const cls = biz
