@@ -158,6 +158,7 @@ export default function ComposeTab() {
   const [selectedBizId, setSelectedBizId] = useState<string | null>(null)
   const [expandedResponse, setExpandedResponse] = useState<number | null>(null)
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
+  const [sentimentFilter, setSentimentFilter] = useState<'all' | 'contact' | 'no-contact' | 'cold' | 'positive' | 'neutral'>('all')
   const [generatedSubject, setGeneratedSubject] = useState<string>('')
   const [generatedBody, setGeneratedBody] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
