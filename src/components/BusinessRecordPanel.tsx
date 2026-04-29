@@ -154,7 +154,36 @@ export default function BusinessRecordPanel({ businessId, onClose }: Props) {
                   >
                     {crmAddMutation.isPending ? '…' : '+ Add to CRM'}
                   </button>
+                  </button>
                 )}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      disabled={deleteMutation.isPending}
+                      title="Delete business"
+                      className="px-3 py-2 rounded-lg border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete this business?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete <span className="font-medium text-foreground">{biz.name}</span> along with its contacts, notes, emails, documents, and DD memos. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteMutation.mutate(biz.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {deleteMutation.isPending ? 'Deleting…' : 'OK, delete'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
 
