@@ -11,6 +11,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { CrmStage, ReviewStatus } from '@/types/acquira';
 import { fetchSosData, parseCityFromAddress, type SosData } from '@/lib/queries/sos-lookup';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 type Tab = 'overview' | 'contacts' | 'notes' | 'docs' | 'cim' | 'sos';
 
@@ -54,6 +65,27 @@ export default function BusinessRecordPanel({ businessId, onClose }: Props) {
   const crmRemoveMutation = useMutation({
     mutationFn: (id: string) => removeFromCrm(id),
     onSuccess: invalidateAll,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      // Best-effort cleanup of related rows (no FK cascades defined)
+      await (supabase.from('activities') as any).delete().eq('business_id', id);
+      await (supabase.from('contacts') as any).delete().eq('business_id', id);
+      await (supabase.from('email_threads') as any).delete().eq('business_id', id);
+      await (supabase.from('dd_documents') as any).delete().eq('business_id', id);
+      await (supabase.from('dd_memos') as any).delete().eq('business_id', id);
+      await (supabase.from('business_classifications') as any).delete().eq('business_id', id);
+      await (supabase.from('scheduled_calls') as any).delete().eq('business_id', id);
+      const { error } = await supabase.from('businesses').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Business deleted');
+      invalidateAll();
+      onClose();
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Failed to delete'),
   });
 
   if (!businessId) return null;
@@ -123,6 +155,34 @@ export default function BusinessRecordPanel({ businessId, onClose }: Props) {
                     {crmAddMutation.isPending ? '…' : '+ Add to CRM'}
                   </button>
                 )}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      disabled={deleteMutation.isPending}
+                      title="Delete business"
+                      className="px-3 py-2 rounded-lg border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete this business?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete <span className="font-medium text-foreground">{biz.name}</span> along with its contacts, notes, emails, documents, and DD memos. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteMutation.mutate(biz.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {deleteMutation.isPending ? 'Deleting…' : 'OK, delete'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
 
