@@ -158,6 +158,7 @@ export default function ComposeTab() {
   const [selectedBizId, setSelectedBizId] = useState<string | null>(null)
   const [expandedResponse, setExpandedResponse] = useState<number | null>(null)
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
+  const [sentimentFilter, setSentimentFilter] = useState<'all' | 'contact' | 'no-contact' | 'cold' | 'positive' | 'neutral'>('all')
   const [generatedSubject, setGeneratedSubject] = useState<string>('')
   const [generatedBody, setGeneratedBody] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
@@ -260,10 +261,45 @@ export default function ComposeTab() {
       {/* Left: CRM Business List */}
       <div className="w-[300px] border-r border-border overflow-y-auto">
         <div className="p-4">
-          <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-3">
-            CRM Businesses ({crmBusinesses.length})
+          <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
+            Filter
           </div>
-          {crmBusinesses.map((biz: any) => {
+          <div className="flex flex-wrap gap-1 mb-3">
+            {([
+              { id: 'all', label: 'All' },
+              { id: 'contact', label: 'Contacted' },
+              { id: 'no-contact', label: 'No Contact' },
+              { id: 'positive', label: 'Positive' },
+              { id: 'neutral', label: 'Neutral' },
+              { id: 'cold', label: 'Cold' },
+            ] as const).map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setSentimentFilter(f.id)}
+                className={`text-[10px] font-mono px-2 py-1 rounded border transition-colors ${
+                  sentimentFilter === f.id
+                    ? 'bg-primary/15 border-primary/40 text-primary'
+                    : 'bg-card border-border text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          {(() => {
+            const filtered = (crmBusinesses as any[]).filter((biz: any) => {
+              if (sentimentFilter === 'all') return true
+              const s = getMockComms(biz.id, biz.name).sentiment
+              if (sentimentFilter === 'contact') return s !== 'no-response'
+              if (sentimentFilter === 'no-contact') return s === 'no-response'
+              return s === sentimentFilter
+            })
+            return (
+              <>
+                <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-3">
+                  CRM Businesses ({filtered.length})
+                </div>
+                {filtered.map((biz: any) => {
             const cls = Array.isArray(biz.classification) ? biz.classification[0] : biz.classification
             const isSelected = biz.id === selectedBizId
             const mockData = getMockComms(biz.id, biz.name)
@@ -302,10 +338,13 @@ export default function ComposeTab() {
                 </div>
               </button>
             )
-          })}
-          {crmBusinesses.length === 0 && (
-            <p className="text-sm text-muted-foreground">No businesses in CRM</p>
-          )}
+                })}
+                {filtered.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No businesses match this filter</p>
+                )}
+              </>
+            )
+          })()}
         </div>
       </div>
 
