@@ -11,6 +11,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { CrmStage, ReviewStatus } from '@/types/acquira';
 import { fetchSosData, parseCityFromAddress, type SosData } from '@/lib/queries/sos-lookup';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 type Tab = 'overview' | 'contacts' | 'notes' | 'docs' | 'cim' | 'sos';
 
