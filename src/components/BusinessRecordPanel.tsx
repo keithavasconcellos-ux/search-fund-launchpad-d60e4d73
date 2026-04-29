@@ -154,7 +154,6 @@ export default function BusinessRecordPanel({ businessId, onClose }: Props) {
                   >
                     {crmAddMutation.isPending ? '…' : '+ Add to CRM'}
                   </button>
-                  </button>
                 )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
