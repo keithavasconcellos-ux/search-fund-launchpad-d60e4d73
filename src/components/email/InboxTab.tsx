@@ -120,7 +120,7 @@ function ThreadDetail({ thread }: { thread: any }) {
 
   const handlePromote = async () => {
     try {
-      await updateCrmStage(thread.business.id, 'contacted', 'engaged', '')
+      await updateCrmStage(thread.business.id, 'contacted', 'engaged', null)
       toast.success(`${businessName} promoted to Engaged`)
       setPromotionDismissed(true)
     } catch {
