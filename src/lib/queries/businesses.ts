@@ -77,7 +77,7 @@ export async function updateCrmStage(
   businessId: string,
   fromStage: CrmStage,
   toStage: CrmStage,
-  userId: string
+  userId?: string | null
 ) {
   const { error: bizError } = await supabase
     .from('businesses')
@@ -94,7 +94,7 @@ export async function updateCrmStage(
       from_stage: fromStage,
       to_stage: toStage,
       body: `Stage moved from ${fromStage} to ${toStage}`,
-      created_by: userId
+      created_by: userId ?? null
     })
 
   if (actError) throw actError
@@ -104,7 +104,7 @@ export async function updateCrmStage(
 export async function addNote(
   businessId: string,
   body: string,
-  userId: string
+  userId?: string | null
 ) {
   const { error } = await (supabase
     .from('activities') as any)
@@ -112,7 +112,7 @@ export async function addNote(
       business_id: businessId,
       type: 'note',
       body,
-      created_by: userId
+      created_by: userId ?? null
     })
 
   if (error) throw error

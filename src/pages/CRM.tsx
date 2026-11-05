@@ -13,9 +13,6 @@ import type { CrmStage } from '@/types/acquira';
 
 type ViewMode = 'kanban' | 'table' | 'timeline';
 
-// Placeholder user ID until auth is wired
-const PLACEHOLDER_USER_ID = '00000000-0000-0000-0000-000000000000';
-
 export default function CRM() {
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
@@ -41,7 +38,7 @@ export default function CRM() {
 
   const stageMutation = useMutation({
     mutationFn: ({ id, from, to }: { id: string; from: CrmStage; to: CrmStage }) =>
-      updateCrmStage(id, from, to, PLACEHOLDER_USER_ID),
+      updateCrmStage(id, from, to, null),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['businesses'] }),
   });
 
