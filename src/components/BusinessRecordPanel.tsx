@@ -430,7 +430,7 @@ function NotesTab({ biz, onUpdate }: { biz: any; onUpdate: () => void }) {
     if (!noteText.trim()) return;
     setSaving(true);
     try {
-      await addNote(biz.id, noteText.trim(), 'user');
+      await addNote(biz.id, noteText.trim(), null);
       toast.success('Note added');
       setNoteText('');
       onUpdate();
